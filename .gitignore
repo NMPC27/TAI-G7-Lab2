@@ -1,0 +1,14 @@
+**/__pycache__
+.vscode
+build
+ignore
+scripts/input/*
+scripts/processed/*
+report/*
+src/*.txt
+
+!report/report.pdf
+!report/report.tex
+!scripts/input/.empty
+!scripts/processed/.empty
+!scripts/images/.empty
