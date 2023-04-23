@@ -11,7 +11,7 @@
 #include <chrono>
 
 #include "cpm/cpm.hpp"
-#include "main.hpp"
+#include "lang.hpp"
 
 using namespace std;
 
@@ -22,11 +22,11 @@ using namespace std;
 #define POINTER_THRESHOLD_MASK_SUCCESSIVE_FAILS 4
 
 /**
- *  \file main.cpp (implementation file)
+ *  \file lang.cpp (implementation file)
  *
- *  \brief Lab1: CPM.
+ *  \brief Lab1: lang.
  *
- *  This file instantiates the CPM model and runs it.
+ *  This file instantiates the lang model and runs it.
  * 
  *  \author Pedro Lima 97860 && Nuno Cunha 98124 && Martinho Tavares 98262
  */
@@ -220,14 +220,18 @@ int main(int argc, char** argv) {
     // Copy model initialization
     CopyModel model = CopyModel(k, alpha, reading_strategy, pointer_thresholds, pointer_threshold_number, pointer_manager, base_distribution);
 
-    string file_name = string(argv[optind]);
+    string reference = string(argv[optind]);
 
     struct stat file_status;
-    stat(file_name.c_str(), &file_status);
+    stat(reference.c_str(), &file_status);
     if (errno == ENOENT) {
-        cout << "Error: file '" << file_name << "' doesn't exist!" << endl;
+        cout << "Error: file '" << reference << "' doesn't exist!" << endl;
         return 1;
     }
+
+    string target = string(argv[optind+1]);
+
+    //!!! CONTINUAR DAQUI PEDROOOOOOOOOOOOOOOOOO
 
     // First pass of the file to compute the base distribution
     model.firstPass(file_name);
