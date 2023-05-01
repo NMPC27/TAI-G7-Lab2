@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
                         verbose_mode = VerboseMode::progress;
                         break;
                     default:
-                        cout << "Error: invalid option for '-v' (" << optarg[0] << ")" << endl;
+                        cerr << "Error: invalid option for '-v' (" << optarg[0] << ")" << endl;
                         return 1;
                 }
                 break;
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
                 } else if (optarg[0] == 'f') {
                     base_distribution = new FrequencyDistribution();
                 } else {
-                    cout << "Error: invalid option for '-p' (" << optarg[0] << ")" << endl;
+                    cerr << "Error: invalid option for '-p' (" << optarg[0] << ")" << endl;
                     return 1;
                 }
                 break;
@@ -127,11 +127,11 @@ int main(int argc, char** argv) {
                     if (circular_value > 0){
                         pointer_manager = new CircularArrayCopyPointerManager(circular_value);
                     }else{
-                        cout << "Error: invalid option for '-r c:X' (" << optarg << ")" << endl;
+                        cerr << "Error: invalid option for '-r c:X' (" << optarg << ")" << endl;
                         return 1;
                     }
                 }else {
-                    cout << "Error: invalid option for '-r' (" << optarg[0] << ")" << endl;
+                    cerr << "Error: invalid option for '-r' (" << optarg[0] << ")" << endl;
                     return 1;
                 }
                 }
@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
                     string optarg_string = string(optarg);
                     int pos = optarg_string.find(":");
                     if (pos == -1) {
-                        cout << "Error: invalid option for '-t' (" << optarg << ")" << endl;
+                        cerr << "Error: invalid option for '-t' (" << optarg << ")" << endl;
                         return 1;
                     }
 
@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
 
                     if (opt == "n") {
                         if (pointer_threshold_mask & POINTER_THRESHOLD_MASK_STATIC) {
-                            cout << "Error: mode '" << opt << "' for option '-t' was specified more than once (repeated value '" << optarg << "')" << endl;
+                            cerr << "Error: mode '" << opt << "' for option '-t' was specified more than once (repeated value '" << optarg << "')" << endl;
                             return 1;
                         }
                         double threshold_value = stof(value);
@@ -167,7 +167,7 @@ int main(int argc, char** argv) {
                         
                     } else if (opt == "f") {
                         if (pointer_threshold_mask & POINTER_THRESHOLD_MASK_SUCCESSIVE_FAILS) {
-                            cout << "Error: mode '" << opt << "' for option '-t' was specified more than once (repeated value '" << optarg << "')" << endl;
+                            cerr << "Error: mode '" << opt << "' for option '-t' was specified more than once (repeated value '" << optarg << "')" << endl;
                             return 1;
                         }
                         int threshold_value = stoi(value);
@@ -176,13 +176,13 @@ int main(int argc, char** argv) {
                             pointer_threshold_number++;
                             pointer_threshold_mask |= POINTER_THRESHOLD_MASK_SUCCESSIVE_FAILS;
                         } else {
-                            cout << "Error: invalid option for '-t f:X' (" << optarg << ")" << endl;
+                            cerr << "Error: invalid option for '-t f:X' (" << optarg << ")" << endl;
                             return 1;
                         }
                         
                     } else if (opt == "c") {
                         if (pointer_threshold_mask & POINTER_THRESHOLD_MASK_DERIVATIVE) {
-                            cout << "Error: mode '" << opt << "' for option '-t' was specified more than once (repeated value '" << optarg << "')" << endl;
+                            cerr << "Error: mode '" << opt << "' for option '-t' was specified more than once (repeated value '" << optarg << "')" << endl;
                             return 1;
                         }
                         double threshold_value = stof(value);
@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
                         pointer_threshold_number++;
                         pointer_threshold_mask |= POINTER_THRESHOLD_MASK_DERIVATIVE;
                     } else {
-                        cout << "Error: invalid option for '-t' (" << optarg << ")" << endl;
+                        cerr << "Error: invalid option for '-t' (" << optarg << ")" << endl;
                         return 1;
                     }
                 }
@@ -202,9 +202,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (optind == argc) {
+    if (optind != argc - 2) {
         printUsage(argv[0]);
-        cout << "Error: no file was specified!" << endl;
+        cerr << "Error: both a reference and target file must be specified as the last arguments!" << endl;
         return 1;
     }
 
@@ -221,34 +221,44 @@ int main(int argc, char** argv) {
     CopyModel model = CopyModel(k, alpha, reading_strategy, pointer_thresholds, pointer_threshold_number, pointer_manager, base_distribution);
 
     string reference = string(argv[optind]);
+    string target = string(argv[optind + 1]);
 
     struct stat file_status;
     stat(reference.c_str(), &file_status);
     if (errno == ENOENT) {
-        cout << "Error: file '" << reference << "' doesn't exist!" << endl;
+        cerr << "Error: file '" << reference << "' doesn't exist!" << endl;
+        return 1;
+    }
+    stat(target.c_str(), &file_status);
+    if (errno == ENOENT) {
+        cerr << "Error: file '" << target << "' doesn't exist!" << endl;
         return 1;
     }
 
-    string target = string(argv[optind+1]);
-
-    //!!! CONTINUAR DAQUI PEDROOOOOOOOOOOOOOOOOO
-
-    // First pass of the file to compute the base distribution
-    model.firstPass(file_name);
-
-    map<char, double> information_sums;
+    // First pass of the file to get the alphabet and compute the base distribution
+    model.firstPass(reference);
 
     // Initialize the first k-pattern with the most frequent symbol
     model.initializeWithMostFrequent();
 
+    // Train on the reference text
+    while (!model.eof()) {
+        model.registerPattern();
+        model.advance();
+    }
+
     if (verbose_mode == VerboseMode::machine)
         outputProbabilityDistributionCSVheader();
 
-    // Loop for prediction through the file
+    map<char, double> information_sums;
+
+    model.appendFuture(target);
+
+    // Loop for prediction through the target
     while (!model.eof()) {
 
-        // Register the current pattern and check if it has been seen before
-        bool pattern_has_past = model.registerPattern();
+        // Check if the current has been seen before in the reference text
+        bool pattern_has_past = model.isPatternRegistered();
         // Check if the model can predict the next symbol
         bool can_predict = model.predictionSetup(pattern_has_past);
 
@@ -350,7 +360,7 @@ void outputProbabilityDistributionCSVbody(char prediction, char actual, double h
 }
 
 void printUsage(char* prog_name) {
-    cout << "Usage: " << prog_name << " [OPTIONS] file" << endl;
+    cout << "Usage: " << prog_name << " [OPTIONS] reference target" << endl;
 }
 
 void printOptions() {

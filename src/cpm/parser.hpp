@@ -1,3 +1,4 @@
+#include "stdlib.h"
 #include <vector>
 #ifndef PARSER_HPP
 #define PARSER_HPP

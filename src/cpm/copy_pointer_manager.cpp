@@ -20,6 +20,10 @@ bool SimpleCopyPointerManager::registerCopyPointer(std::string pattern, size_t p
     return true;
 }
 
+bool SimpleCopyPointerManager::isPatternRegistered(std::string pattern) {
+    return pointer_map.count(pattern) != 0;
+}
+
 int SimpleCopyPointerManager::getCopyPointer(std::string pattern) {
     return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
 }
@@ -66,6 +70,10 @@ bool CircularArrayCopyPointerManager::registerCopyPointer(std::string pattern, s
 
     
     return true;
+}
+
+bool CircularArrayCopyPointerManager::isPatternRegistered(std::string pattern) {
+    return pointer_map.count(pattern) != 0;
 }
 
 int CircularArrayCopyPointerManager::getCopyPointer(std::string pattern) {

@@ -17,13 +17,16 @@ bool CopyModel::registerPattern() {
     return pointer_manager->registerCopyPointer(current_pattern, current_position);
 }
 
+bool CopyModel::isPatternRegistered() {
+    return pointer_manager->isPatternRegistered(current_pattern);
+}
+
 void CopyModel::advance() {
     // Update current pattern and advance read pointer (current_position)
     current_pattern += reading_strategy->at(++current_position);
     current_pattern.erase(0, 1);
     // Advance copy pointer
     copy_position++;
-    
 }
 
 // Returns true when able to predict
@@ -91,6 +94,20 @@ void CopyModel::firstPass(std::string file_name) {
 
     base_distribution->setBaseDistribution(alphabet_counts);
     probability_distribution = std::map<char, double>(base_distribution->distribution);
+}
+
+void CopyModel::appendFuture(std::string file_name) {
+    
+    std::ifstream file(file_name);
+
+    char c = file.get();
+    
+    while (!file.eof()) {
+        reading_strategy->read(c);
+        c = file.get();
+    }
+
+    file.close();
 }
 
 bool CopyModel::eof() {

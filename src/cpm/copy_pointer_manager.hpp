@@ -74,7 +74,15 @@ public:
  * @return false 
  */
     virtual bool registerCopyPointer(std::string, size_t) = 0;
-
+/**
+ * @brief Check if a pattern has already been registered.
+ * 
+ * @param pattern 
+ * 
+ * @return true 
+ * @return false 
+ */
+    virtual bool isPatternRegistered(std::string pattern) = 0;
 /**
  * @brief checks if the prediction was correct and updates the hits and misses.
  * 
@@ -123,6 +131,7 @@ public:
     virtual ~SimpleCopyPointerManager() {};
     int getCopyPointer(std::string);
     bool registerCopyPointer(std::string, size_t);
+    bool isPatternRegistered(std::string);
     void reportPrediction(std::string, bool);
     void reset();
     int getHits(std::string);
@@ -130,7 +139,6 @@ public:
 };
 
 class CircularArrayCopyPointerManager : public CopyPointerManager {
-
 
     std::map<std::string, CircularArrayPointerInfo> pointer_map;
     int hits = 0;
@@ -141,6 +149,7 @@ public:
     CircularArrayCopyPointerManager(int size) : array_size(size) {}
     int getCopyPointer(std::string);
     bool registerCopyPointer(std::string, size_t);
+    bool isPatternRegistered(std::string);
     void reportPrediction(std::string, bool);
     void reset();
     int getHits(std::string);

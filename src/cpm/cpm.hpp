@@ -100,6 +100,13 @@ public:
  */
     bool registerPattern();
 /**
+ * @brief Check if the current pattern has already been registered.
+ * 
+ * @return true 
+ * @return false 
+ */
+    bool isPatternRegistered();
+/**
  * @brief Verifies whether we can make a predction or not.
  * This is done by checking if the copy_pointer isn't pointing to the current position.
  * It also gets the copy pointer from the pointer_manager, if the copy_pointer is pointing to the current position.
@@ -160,6 +167,11 @@ public:
  * 
  */
     void initializeWithMostFrequent();
+/**
+ * @brief Append the contents of another file in memory. Doesn't perform any calculations over it.
+ * 
+ */
+    void appendFuture(std::string);
 
     // Read-only values. Always overwritten when calling predictNext()
     std::map<char, double> probability_distribution;
