@@ -1,6 +1,7 @@
 **/__pycache__
 .vscode
-build
+release
+debug
 ignore
 scripts/input/*
 scripts/processed/*
