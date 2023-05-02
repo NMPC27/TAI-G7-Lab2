@@ -49,7 +49,12 @@ bool CopyModel::predictionSetup(bool pattern_has_past) {
         pointer_manager->repositionCopyPointer(copy_pattern, reading_strategy);
         // Change copy pointer to a new one, this one being from the current pattern
         copy_pattern = current_pattern;
-        copy_position = pointer_manager->getCopyPointer(current_pattern);
+        // If the model is learning (registering patterns), then we can attempt another copy right now (since current_pattern must have been registered)
+        if (pattern_has_past)
+            copy_position = pointer_manager->getCopyPointer(current_pattern);
+        // Otherwise, we have to guess from now on, instead of starting another copy
+        else
+            copy_position = current_position;
 
         pointer_manager->reset();
         for (int i = 0; i < pointer_threshold_number; i++)

@@ -158,8 +158,8 @@ void NextOldestCopyPointerManager::repositionCopyPointer(std::string pattern, Re
 
 void MostCommonCopyPointerManager::repositionCopyPointer(std::string pattern, ReadingStrategy* reading_strategy) {
     
-    // we should not consider the last pointer in the pointers array, since it's the one that was just added
-    std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), std::prev(pointer_map[pattern].pointers.end()));
+    // we can consider the last pointer in the pointers array, assuming the current pattern hasn't been added yet
+    std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), pointer_map[pattern].pointers.end());
     
     int count;
     int offset = 1;
