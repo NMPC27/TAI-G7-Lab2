@@ -22,14 +22,11 @@ def main(target: str, land_args: List[str], quit_at_error: bool=False):
     target_path = join(project_path, target)
 
     print_progress(0, 'Starting to analyze references...')
-    reference_names = listdir(references_folder_path)
+    reference_names = [reference_name for reference_name in listdir(references_folder_path) if reference_name != '.empty']
     total_references = len(reference_names)
     entropies = {reference_name:None for reference_name in reference_names}
     
     for progress, reference_name in enumerate(reference_names):
-        if reference_name == '.empty':
-            continue
-        
         reference_path = join(references_folder_path, reference_name)
         
         print_progress(progress / total_references, f'Running reference {reference_name}...')
