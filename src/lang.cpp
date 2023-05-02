@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     int c;
     int k = 12;
     double alpha = 1.0;
-    enum VerboseMode{human, machine, progress, none} verbose_mode = VerboseMode::none;
+    enum VerboseMode{human, machine, progress, minimal, none} verbose_mode = VerboseMode::none;
     ReadingStrategy* reading_strategy = nullptr;
     CopyPointerThreshold* pointer_thresholds[POINTER_THRESHOLD_MAX_NUMBER];
     int pointer_threshold_number = 0;
@@ -71,6 +71,9 @@ int main(int argc, char** argv) {
                         break;
                     case 'p':
                         verbose_mode = VerboseMode::progress;
+                        break;
+                    case 'o':
+                        verbose_mode = VerboseMode::minimal;
                         break;
                     default:
                         cerr << "Error: invalid option for '-v' (" << optarg[0] << ")" << endl;
@@ -305,7 +308,7 @@ int main(int argc, char** argv) {
             case VerboseMode::progress:
                 printf("Progress: %3f%%\r", model.progress() * 100);
                 break;
-            case VerboseMode::none:
+            default:
                 break;
         }
         information_sums[model.actual] += -log2(model.probability_distribution[model.actual]);
@@ -317,24 +320,32 @@ int main(int argc, char** argv) {
     delete pointer_manager;
     delete base_distribution;
 
-    double information_sum = 0.0;
-    cout << "Average amount of information in symbol..." << endl;
-    for (auto pair : information_sums) {
-        cout << pair.first << ": " << pair.second / model.countOf(pair.first) << " bits" << endl;
-        information_sum += pair.second;
+    if (verbose_mode == VerboseMode::minimal) {
+        double information_sum = 0.0;
+        for (auto pair : information_sums)
+            information_sum += pair.second;
+        cout << information_sum << endl;
     }
+    else {
+        double information_sum = 0.0;
+        cout << "Average amount of information in symbol..." << endl;
+        for (auto pair : information_sums) {
+            cout << pair.first << ": " << pair.second / model.countOf(pair.first) << " bits" << endl;
+            information_sum += pair.second;
+        }
 
-    int sum=0;
-    for(std::map<char,double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
-        sum+=model.countOf(it->first);
+        int sum=0;
+        for(std::map<char,double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+            sum+=model.countOf(it->first);
+        }
+        cout << "Mean amount of information of a symbol: " << information_sum/sum << " bits" << endl;
+        cout << "Total amount of information: " << information_sum << " bits" << endl;
+
+        auto end = sc.now();
+        auto time_span = static_cast<chrono::duration<double>>(end - start);   // measure time span between start & end
+
+        cout << "Time elapsed: " << time_span.count() << " seconds" << endl;
     }
-    cout << "Mean amount of information of a symbol: " << information_sum/sum << " bits" << endl;
-    cout << "Total amount of information: " << information_sum << " bits" << endl;
-
-    auto end = sc.now();
-    auto time_span = static_cast<chrono::duration<double>>(end - start);   // measure time span between start & end
-
-    cout << "Time elapsed: " << time_span.count() << " seconds" << endl;
 
     return 0;
 }
@@ -370,6 +381,7 @@ void printOptions() {
     cout << "\t\t\t\th - Human-readable verbose output, color-coded depending on whether a hit/miss/guess occurred" << endl;
     cout << "\t\t\t\tm - Machine-readable verbose output, without color-coding and minimal flair (CSV format with header)" << endl;
     cout << "\t\t\t\tp - Print the progress of processing the sequence" << endl;
+    cout << "\t\t\t\to - Print only the total number of bits to standard output" << endl;
     cout << "\t-k K\t\tSize of the sliding window (default: 12)" << endl;
     cout << "\t-a A\t\tSmoothing parameter alpha for the prediction probability (default: 1.0)" << endl;
     cout << "\t-p P\t\tProbability distribution of the characters other than the one being predicted (default: f):" << endl;
