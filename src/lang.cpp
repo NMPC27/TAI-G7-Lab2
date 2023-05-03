@@ -253,9 +253,12 @@ int main(int argc, char** argv) {
     if (verbose_mode == VerboseMode::machine)
         outputProbabilityDistributionCSVheader();
 
-    map<char, double> information_sums;
+    // Substitute with the target's alphabet
+    model.firstPass(target);
+    // model.appendFuture(target);
 
-    model.appendFuture(target);
+    // TODO: should use the reference or the target's alphabet?
+    map<char, double> information_sums;
 
     // Loop for prediction through the target
     while (!model.eof()) {

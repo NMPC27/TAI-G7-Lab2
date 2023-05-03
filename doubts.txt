@@ -1,1 +1,2 @@
 - Support for UTF-8 characters?
+- Error: infinite bits?

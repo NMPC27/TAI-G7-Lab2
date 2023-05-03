@@ -1,6 +1,8 @@
+#include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <list>
+#include <cmath>
 #include "cpm.hpp"
 
 void CopyModel::initializeWithMostFrequent() {
@@ -75,6 +77,7 @@ bool CopyModel::predict() {
 
     // Update internal probability distribution
     setRemainderProbabilities(prediction, 1.0 - hit_probability);
+    // TODO: raise error if not present?
     probability_distribution[prediction] = hit_probability;
 
     return hit;
