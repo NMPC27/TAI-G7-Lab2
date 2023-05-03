@@ -5,8 +5,8 @@
 
 
 void outputProbabilityDistributionCSVheader();
-void outputProbabilityDistributionCSVbody(char prediction, char actual, double hit_probability, std::map<char, double> distribution);
-void outputProbabilityDistributionHuman(char prediction, char actual, double hit_probability, std::map<char, double> base_distribution);
+void outputProbabilityDistributionCSVbody(wchar_t prediction, wchar_t actual, double hit_probability, std::map<wchar_t, double> distribution);
+void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, std::map<wchar_t, double> base_distribution);
 
 // Options
 void printUsage(char* prog_name);

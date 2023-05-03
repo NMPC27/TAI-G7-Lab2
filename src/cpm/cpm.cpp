@@ -3,14 +3,16 @@
 #include <algorithm>
 #include <list>
 #include <cmath>
+#include <locale>
+#include <codecvt>
 #include "cpm.hpp"
 
 void CopyModel::initializeWithMostFrequent() {
     auto max_pair = std::max_element(alphabet_counts.begin(), alphabet_counts.end(),
-            [](const std::pair<char, int>& x, const std::pair<char, int>& y) {return x.second < y.second;}
+            [](const std::pair<wchar_t, int>& x, const std::pair<wchar_t, int>& y) {return x.second < y.second;}
     );
 
-    current_pattern = std::string(k, max_pair->first);
+    current_pattern = std::wstring(k, max_pair->first);
     copy_pattern = current_pattern;
 }
 
@@ -85,9 +87,10 @@ bool CopyModel::predict() {
 
 void CopyModel::firstPass(std::string file_name) {
     
-    std::ifstream file(file_name);
+    std::wifstream file(file_name);
+    file.imbue(std::locale(file.getloc(), new std::codecvt_utf8<wchar_t>));
 
-    char c = file.get();
+    wchar_t c = file.get();
     
     while (!file.eof()) {
         reading_strategy->read(c);
@@ -101,14 +104,15 @@ void CopyModel::firstPass(std::string file_name) {
     file.close();
 
     base_distribution->setBaseDistribution(alphabet_counts);
-    probability_distribution = std::map<char, double>(base_distribution->distribution);
+    probability_distribution = std::map<wchar_t, double>(base_distribution->distribution);
 }
 
 void CopyModel::appendFuture(std::string file_name) {
     
-    std::ifstream file(file_name);
+    std::wifstream file(file_name);
+    file.imbue(std::locale(file.getloc(), new std::codecvt_utf8<wchar_t>));
 
-    char c = file.get();
+    wchar_t c = file.get();
     
     while (!file.eof()) {
         reading_strategy->read(c);
@@ -123,7 +127,7 @@ bool CopyModel::eof() {
     return current_position + 1 >= reading_strategy->endOfStream();
 }
 
-int CopyModel::countOf(char c) {
+int CopyModel::countOf(wchar_t c) {
     return alphabet_counts[c];
 }
 
@@ -131,7 +135,7 @@ double CopyModel::calculateProbability(int hits, int misses) {
     return (hits + alpha) / (hits + misses + 2 * alpha);
 }
 
-void CopyModel::setRemainderProbabilities(char exception, double probability_to_distribute) {
+void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute) {
     double base_remainder_total = 0.0;
     for (auto pair : base_distribution->distribution)
         if (pair.first != exception)

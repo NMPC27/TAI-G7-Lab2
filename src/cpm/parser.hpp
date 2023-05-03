@@ -25,8 +25,8 @@ class ReadingStrategy {
 
 public:
     virtual ~ReadingStrategy() {};
-    virtual void read(char) = 0;
-    virtual char at(size_t) = 0;
+    virtual void read(wchar_t) = 0;
+    virtual wchar_t at(size_t) = 0;
     virtual size_t endOfStream() = 0;
 
 };
@@ -42,7 +42,7 @@ class InMemoryReadingStrategy : public ReadingStrategy {
      * @brief Vector that contains the file in memory.
      * 
      */
-    std::vector<char> mem_file;
+    std::vector<wchar_t> mem_file;
 
 public:
 
@@ -50,13 +50,13 @@ public:
      * @brief Reads a character from the file and stores it in the vector.
      * 
      */
-    void read(char);
+    void read(wchar_t);
     /**
      * @brief Returns the character at the given position in the vector.
      * 
-     * @return char 
+     * @return wchar_t 
      */
-    char at(size_t);
+    wchar_t at(size_t);
     /**
      * @brief Returns the size of the vector.
      * 

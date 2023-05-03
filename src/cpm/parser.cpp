@@ -1,10 +1,10 @@
 #include "parser.hpp"
 
-void InMemoryReadingStrategy::read(char c) {
+void InMemoryReadingStrategy::read(wchar_t c) {
     this->mem_file.push_back(c);
 }
 
-char InMemoryReadingStrategy::at(size_t pos) {
+wchar_t InMemoryReadingStrategy::at(size_t pos) {
     return this->mem_file[pos];
 }
 

@@ -1,2 +1,5 @@
 - Support for UTF-8 characters?
-- Error: infinite bits?
+- Support for UTF-8 characters?
+- locate_lang dict in mem
+    - estrategias de threshold para trocar para outro dict
+

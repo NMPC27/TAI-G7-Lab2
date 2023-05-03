@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cwchar>
 #include "parser.hpp"
 #include "copy_pointer_threshold.hpp"
 #include "copy_pointer_manager.hpp"
@@ -81,12 +82,12 @@ class CopyModel {
     CopyPointerManager* pointer_manager;
     BaseDistribution* base_distribution;
 
-    std::map<char, int> alphabet_counts;
+    std::map<wchar_t, int> alphabet_counts;
     
     size_t current_position = -1;
-    std::string current_pattern;
+    std::wstring current_pattern;
     size_t copy_position = -1;
-    std::string copy_pattern;
+    std::wstring copy_pattern;
 
 public:
     CopyModel(int k, double alpha, ReadingStrategy* rs, CopyPointerThreshold** pt, int ptn, CopyPointerManager* pm, BaseDistribution* bd) : 
@@ -150,7 +151,7 @@ public:
  * 
  * @return int 
  */
-    int countOf(char);
+    int countOf(wchar_t);
 /**
  * @brief In case we can't make a prediction, we use the base distribution to guess the next symbol.
  * 
@@ -174,10 +175,10 @@ public:
     void appendFuture(std::string);
 
     // Read-only values. Always overwritten when calling predictNext()
-    std::map<char, double> probability_distribution;
+    std::map<wchar_t, double> probability_distribution;
     double hit_probability = 0;
-    char prediction = '\0';
-    char actual = '\0';
+    wchar_t prediction = '\0';
+    wchar_t actual = '\0';
 
 private:
 /**
@@ -190,7 +191,7 @@ private:
  * @brief Set the Remainder Probabilities of the probability distribution after the prediction.
  * 
  */
-    void setRemainderProbabilities(char, double);
+    void setRemainderProbabilities(wchar_t, double);
 /**
  * @brief Verifies if the hit probability surpasses any threshold, used when the user defined more than one type of threshold for copy pointer changing.
  * 

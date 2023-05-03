@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
     // model.appendFuture(target);
 
     // TODO: should use the reference or the target's alphabet?
-    map<char, double> information_sums;
+    map<wchar_t, double> information_sums;
 
     // Loop for prediction through the target
     while (!model.eof()) {
@@ -338,7 +338,7 @@ int main(int argc, char** argv) {
         }
 
         int sum=0;
-        for(std::map<char,double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+        for(std::map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
             sum+=model.countOf(it->first);
         }
         cout << "Mean amount of information of a symbol: " << information_sum/sum << " bits" << endl;
@@ -353,7 +353,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void outputProbabilityDistributionHuman(char prediction, char actual, double hit_probability, map<char, double> base_distribution) {
+void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, map<wchar_t, double> base_distribution) {
     cout << "Prediction: '" << prediction << "', Actual: '" << actual << "', " << hit_probability << "\t" << " | Distribution: ";
     for (auto pair : base_distribution) {
         cout << "('" << pair.first << "', " << pair.second << ") ";
@@ -365,7 +365,7 @@ void outputProbabilityDistributionCSVheader() {
     cout << "Prediction, Actual, Hit probability, Distribution" << endl;
 }
 
-void outputProbabilityDistributionCSVbody(char prediction, char actual, double hit_probability, map<char, double> distribution) {
+void outputProbabilityDistributionCSVbody(wchar_t prediction, wchar_t actual, double hit_probability, map<wchar_t, double> distribution) {
     cout << prediction << "," << actual << "," << hit_probability << ",";
     for (auto pair : distribution) {
         cout << pair.first << "\t" << pair.second << "\t";

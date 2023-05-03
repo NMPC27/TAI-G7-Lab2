@@ -3,7 +3,7 @@
 #include <list>
 #include "copy_pointer_manager.hpp"
 
-bool SimpleCopyPointerManager::registerCopyPointer(std::string pattern, size_t position) {
+bool SimpleCopyPointerManager::registerCopyPointer(std::wstring pattern, size_t position) {
     if (pointer_map.count(pattern) == 0) {
 
         struct SimplePointerInfo pattern_info = {
@@ -20,15 +20,15 @@ bool SimpleCopyPointerManager::registerCopyPointer(std::string pattern, size_t p
     return true;
 }
 
-bool SimpleCopyPointerManager::isPatternRegistered(std::string pattern) {
+bool SimpleCopyPointerManager::isPatternRegistered(std::wstring pattern) {
     return pointer_map.count(pattern) != 0;
 }
 
-int SimpleCopyPointerManager::getCopyPointer(std::string pattern) {
+int SimpleCopyPointerManager::getCopyPointer(std::wstring pattern) {
     return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
 }
 
-void SimpleCopyPointerManager::reportPrediction(std::string pattern, bool hit) {
+void SimpleCopyPointerManager::reportPrediction(std::wstring pattern, bool hit) {
     if (hit) {
         hits++;
     } else {
@@ -41,11 +41,11 @@ void SimpleCopyPointerManager::reset() {
     misses = 0;
 }
 
-int SimpleCopyPointerManager::getHits(std::string current_pattern) { return hits; }
+int SimpleCopyPointerManager::getHits(std::wstring current_pattern) { return hits; }
 
-int SimpleCopyPointerManager::getMisses(std::string current_pattern) { return misses; }
+int SimpleCopyPointerManager::getMisses(std::wstring current_pattern) { return misses; }
 
-bool CircularArrayCopyPointerManager::registerCopyPointer(std::string pattern, size_t position) {
+bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring pattern, size_t position) {
     if (pointer_map.count(pattern) == 0) {
 
         struct CircularArrayPointerInfo pattern_info = {
@@ -72,15 +72,15 @@ bool CircularArrayCopyPointerManager::registerCopyPointer(std::string pattern, s
     return true;
 }
 
-bool CircularArrayCopyPointerManager::isPatternRegistered(std::string pattern) {
+bool CircularArrayCopyPointerManager::isPatternRegistered(std::wstring pattern) {
     return pointer_map.count(pattern) != 0;
 }
 
-int CircularArrayCopyPointerManager::getCopyPointer(std::string pattern) {
+int CircularArrayCopyPointerManager::getCopyPointer(std::wstring pattern) {
     return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
 }
 
-void CircularArrayCopyPointerManager::reportPrediction(std::string pattern, bool hit) {
+void CircularArrayCopyPointerManager::reportPrediction(std::wstring pattern, bool hit) {
     if (hit) {
         hits++;
     } else {
@@ -93,11 +93,11 @@ void CircularArrayCopyPointerManager::reset() {
     misses = 0;
 }
 
-int CircularArrayCopyPointerManager::getHits(std::string current_pattern) { return hits; }
+int CircularArrayCopyPointerManager::getHits(std::wstring current_pattern) { return hits; }
 
-int CircularArrayCopyPointerManager::getMisses(std::string current_pattern) { return misses; }
+int CircularArrayCopyPointerManager::getMisses(std::wstring current_pattern) { return misses; }
 
-void CircularArrayCopyPointerManager::repositionCopyPointer(std::string pattern, ReadingStrategy* reading_strategy) {
+void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern, ReadingStrategy* reading_strategy) {
     
     // we should not consider the last pointer in the pointers array, since it's the one that was just added
     std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), std::prev(pointer_map[pattern].pointers.end()));
@@ -106,7 +106,7 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::string pattern,
 
     int count;
     int offset = 1;
-    char most_frequent = '\0';
+    wchar_t most_frequent = '\0';
 
     while (most_frequent == '\0' || count > 1){
 
@@ -114,7 +114,7 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::string pattern,
 
         // Majority algorithm: first pass (determine most frequent)
         for (size_t pointer : pointer_candidates) {
-            char char_at_pointer = reading_strategy->at(pointer + offset);
+            wchar_t char_at_pointer = reading_strategy->at(pointer + offset);
 
             if (count == 0) {
                 most_frequent = char_at_pointer;
@@ -147,23 +147,23 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::string pattern,
 
 }
 
-void RecentCopyPointerManager::repositionCopyPointer(std::string pattern, ReadingStrategy* reading_strategy) {
+void RecentCopyPointerManager::repositionCopyPointer(std::wstring pattern, ReadingStrategy* reading_strategy) {
     // second to last copy pointer (because most recent could lead to predicting future)
     pointer_map[pattern].copy_pointer_index = pointer_map[pattern].pointers.size() - 2;
 }
 
-void NextOldestCopyPointerManager::repositionCopyPointer(std::string pattern, ReadingStrategy* reading_strategy) {
+void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring pattern, ReadingStrategy* reading_strategy) {
     pointer_map[pattern].copy_pointer_index += 1;
 }
 
-void MostCommonCopyPointerManager::repositionCopyPointer(std::string pattern, ReadingStrategy* reading_strategy) {
+void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring pattern, ReadingStrategy* reading_strategy) {
     
     // we can consider the last pointer in the pointers array, assuming the current pattern hasn't been added yet
     std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), pointer_map[pattern].pointers.end());
     
     int count;
     int offset = 1;
-    char most_frequent = '\0';
+    wchar_t most_frequent = '\0';
 
     while (most_frequent == '\0' || count > 1){
 
@@ -171,7 +171,7 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::string pattern, Re
 
         // First pass: majority algorithm (determine most frequent)
         for (size_t pointer : pointer_candidates) {
-            char char_at_pointer = reading_strategy->at(pointer + offset);
+            wchar_t char_at_pointer = reading_strategy->at(pointer + offset);
 
             if (count == 0) {
                 most_frequent = char_at_pointer;

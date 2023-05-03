@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cwchar>
 #include "parser.hpp"
 
 /**
@@ -53,7 +54,7 @@ public:
  * 
  * @return int 
  */
-    virtual int getCopyPointer(std::string) = 0;
+    virtual int getCopyPointer(std::wstring) = 0;
 /**
  * @brief Reposition the copy pointer of a pattern.
  * 
@@ -63,7 +64,7 @@ public:
  * @param reading_strategy
  * 
  */
-    virtual void repositionCopyPointer(std::string, ReadingStrategy*) = 0;
+    virtual void repositionCopyPointer(std::wstring, ReadingStrategy*) = 0;
 /**
  * @brief Register a new copy pointer for a pattern.
  * 
@@ -73,7 +74,7 @@ public:
  * @return true 
  * @return false 
  */
-    virtual bool registerCopyPointer(std::string, size_t) = 0;
+    virtual bool registerCopyPointer(std::wstring, size_t) = 0;
 /**
  * @brief Check if a pattern has already been registered.
  * 
@@ -82,7 +83,7 @@ public:
  * @return true 
  * @return false 
  */
-    virtual bool isPatternRegistered(std::string pattern) = 0;
+    virtual bool isPatternRegistered(std::wstring pattern) = 0;
 /**
  * @brief checks if the prediction was correct and updates the hits and misses.
  * 
@@ -90,7 +91,7 @@ public:
  * @param hit
  * 
  */
-    virtual void reportPrediction(std::string, bool) = 0;
+    virtual void reportPrediction(std::wstring, bool) = 0;
 /**
  * @brief resets the hits and misses.
  * 
@@ -104,7 +105,7 @@ public:
  * 
  * @return int 
  */
-    virtual int getHits(std::string) = 0;
+    virtual int getHits(std::wstring) = 0;
 
 /**
  * @brief Get the Misses of a pattern.
@@ -113,7 +114,7 @@ public:
  * 
  * @return int 
  */
-    virtual int getMisses(std::string) = 0;
+    virtual int getMisses(std::wstring) = 0;
 };
 
 /**
@@ -123,38 +124,38 @@ public:
 class SimpleCopyPointerManager : public CopyPointerManager {
 
 protected:
-    std::map<std::string, SimplePointerInfo> pointer_map;
+    std::map<std::wstring, SimplePointerInfo> pointer_map;
     int hits = 0;
     int misses = 0;
 
 public:
     virtual ~SimpleCopyPointerManager() {};
-    int getCopyPointer(std::string);
-    bool registerCopyPointer(std::string, size_t);
-    bool isPatternRegistered(std::string);
-    void reportPrediction(std::string, bool);
+    int getCopyPointer(std::wstring);
+    bool registerCopyPointer(std::wstring, size_t);
+    bool isPatternRegistered(std::wstring);
+    void reportPrediction(std::wstring, bool);
     void reset();
-    int getHits(std::string);
-    int getMisses(std::string);
+    int getHits(std::wstring);
+    int getMisses(std::wstring);
 };
 
 class CircularArrayCopyPointerManager : public CopyPointerManager {
 
-    std::map<std::string, CircularArrayPointerInfo> pointer_map;
+    std::map<std::wstring, CircularArrayPointerInfo> pointer_map;
     int hits = 0;
     int misses = 0;
     int array_size;
 
 public:
     CircularArrayCopyPointerManager(int size) : array_size(size) {}
-    int getCopyPointer(std::string);
-    bool registerCopyPointer(std::string, size_t);
-    bool isPatternRegistered(std::string);
-    void reportPrediction(std::string, bool);
+    int getCopyPointer(std::wstring);
+    bool registerCopyPointer(std::wstring, size_t);
+    bool isPatternRegistered(std::wstring);
+    void reportPrediction(std::wstring, bool);
     void reset();
-    int getHits(std::string);
-    int getMisses(std::string);
-    void repositionCopyPointer(std::string, ReadingStrategy*);
+    int getHits(std::wstring);
+    int getMisses(std::wstring);
+    void repositionCopyPointer(std::wstring, ReadingStrategy*);
 };
 
 /**
@@ -167,7 +168,7 @@ public:
 
 class MostCommonCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::string, ReadingStrategy*);    
+    void repositionCopyPointer(std::wstring, ReadingStrategy*);    
 };
 
 /**
@@ -177,7 +178,7 @@ public:
  */
 class RecentCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::string, ReadingStrategy*);
+    void repositionCopyPointer(std::wstring, ReadingStrategy*);
 };
 
 /**
@@ -187,5 +188,5 @@ public:
  */
 class NextOldestCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::string, ReadingStrategy*);
+    void repositionCopyPointer(std::wstring, ReadingStrategy*);
 };

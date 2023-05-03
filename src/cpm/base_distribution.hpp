@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cwchar>
 
 /**
  *  \file base_distribution.hpp (interface file)
@@ -31,8 +32,8 @@ public:
  * This method uses the histogram count to set the base distribution.
  */
     virtual ~BaseDistribution() {};
-    virtual void setBaseDistribution(std::map<char, int> histogram) = 0;
-    std::map<char, double> distribution;
+    virtual void setBaseDistribution(std::map<wchar_t, int> histogram) = 0;
+    std::map<wchar_t, double> distribution;
 };
 
 /**
@@ -44,7 +45,7 @@ public:
 
 class UniformDistribution : public BaseDistribution {
 public:
-    void setBaseDistribution(std::map<char, int> histogram);
+    void setBaseDistribution(std::map<wchar_t, int> histogram);
 };
 
 /**
@@ -56,5 +57,5 @@ public:
 
 class FrequencyDistribution : public BaseDistribution {
 public:
-    void setBaseDistribution(std::map<char, int> histogram);
+    void setBaseDistribution(std::map<wchar_t, int> histogram);
 };
