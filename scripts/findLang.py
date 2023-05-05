@@ -5,9 +5,6 @@ from os.path import join
 from typing import List
 
 
-REFERENCES_FOLDER = 'references'
-
-
 def print_progress(progress: float, message: str):
     print(f'[{progress:.2%}] {message:100}', end='\r')
 
