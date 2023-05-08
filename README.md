@@ -37,6 +37,17 @@ The generated binaries **TODO** will be present in the `bin` folder.
 
 **TODO**
 
+### Verbose mode: Machine (`-v m`)
+
+The output of this mode will be an array of consecutive 8-byte floating point numbers.
+Below is an example of how these may be written in Python using NumPy:
+
+```python
+>>> import numpy as np
+>>> information_at_each_step = np.fromfile('lang.bin', np.float64)
+array([9.77614296, 9.7864965 , 2.66104321, ..., 0.05050169, 0.07076569, 0.05976416])
+```
+
 ## Example runs
 
 **TODO**
