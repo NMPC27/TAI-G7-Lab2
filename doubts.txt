@@ -3,3 +3,6 @@
 - locate_lang dict in mem
     - estrategias de threshold para trocar para outro dict
 
+    passa baixo filtro
+    
+

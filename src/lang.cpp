@@ -306,7 +306,7 @@ int main(int argc, char** argv) {
                 }
                 break;
             case VerboseMode::machine:
-                outputProbabilityDistributionCSVbody(model.prediction, model.actual, model.hit_probability, model.probability_distribution);
+                outputCurrentInformation(model.prediction, model.actual, model.hit_probability, model.probability_distribution);
                 break;
             case VerboseMode::progress:
                 printf("Progress: %3f%%\r", model.progress() * 100);
@@ -361,16 +361,8 @@ void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, doub
     cout << endl;
 }
 
-void outputProbabilityDistributionCSVheader() {
-    cout << "Prediction, Actual, Hit probability, Distribution" << endl;
-}
-
-void outputProbabilityDistributionCSVbody(wchar_t prediction, wchar_t actual, double hit_probability, map<wchar_t, double> distribution) {
-    cout << prediction << "," << actual << "," << hit_probability << ",";
-    for (auto pair : distribution) {
-        cout << pair.first << "\t" << pair.second << "\t";
-    }
-    cout << endl;
+void outputCurrentInformation(wchar_t prediction, wchar_t actual, double hit_probability, map<wchar_t, double> distribution) {
+    
 }
 
 void printUsage(char* prog_name) {
@@ -380,9 +372,9 @@ void printUsage(char* prog_name) {
 void printOptions() {
     cout << "Options:" << endl;
     cout << "\t-h\t\tShow this help message" << endl;
-    cout << "\t-v V\t\tAdditional output (verbose modes output the probability distribution at each encoding step):" << endl;
-    cout << "\t\t\t\th - Human-readable verbose output, color-coded depending on whether a hit/miss/guess occurred" << endl;
-    cout << "\t\t\t\tm - Machine-readable verbose output, without color-coding and minimal flair (CSV format with header)" << endl;
+    cout << "\t-v V\t\tAdditional output:" << endl;
+    cout << "\t\t\t\th - Human-readable probability distributions at each step, color-coded depending on whether a hit/miss/guess occurred" << endl;
+    cout << "\t\t\t\tm - Machine-readable symbol information at each step" << endl;
     cout << "\t\t\t\tp - Print the progress of processing the sequence" << endl;
     cout << "\t\t\t\to - Print only the total number of bits to standard output" << endl;
     cout << "\t-k K\t\tSize of the sliding window (default: 12)" << endl;
