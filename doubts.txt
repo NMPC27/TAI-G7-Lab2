@@ -1,8 +1,9 @@
 - Support for UTF-8 characters?
-- Support for UTF-8 characters?
+    Yes
+
 - locate_lang dict in mem
     - estrategias de threshold para trocar para outro dict
 
     passa baixo filtro
-    
 
+- Too slow after UTF-8 support?

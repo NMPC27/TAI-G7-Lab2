@@ -191,7 +191,7 @@ private:
  * @brief Set the Remainder Probabilities of the probability distribution after the prediction.
  * 
  */
-    void setRemainderProbabilities(wchar_t, double);
+    void setRemainderProbabilities(wchar_t, double, std::map<wchar_t, double>);
 /**
  * @brief Verifies if the hit probability surpasses any threshold, used when the user defined more than one type of threshold for copy pointer changing.
  * 

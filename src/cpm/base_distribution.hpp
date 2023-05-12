@@ -32,8 +32,10 @@ public:
  * This method uses the histogram count to set the base distribution.
  */
     virtual ~BaseDistribution() {};
+    virtual void setParameters(double alpha) {};
     virtual void setBaseDistribution(std::map<wchar_t, int> histogram) = 0;
-    std::map<wchar_t, double> distribution;
+    virtual void updateWithContext(std::wstring context, wchar_t symbol) {};
+    virtual std::map<wchar_t, double> getDistributionWithContext(std::wstring context) = 0;
 };
 
 /**
@@ -44,8 +46,12 @@ public:
  */
 
 class UniformDistribution : public BaseDistribution {
+
+    std::map<wchar_t, double> distribution;
+
 public:
     void setBaseDistribution(std::map<wchar_t, int> histogram);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring context);
 };
 
 /**
@@ -56,6 +62,30 @@ public:
  */
 
 class FrequencyDistribution : public BaseDistribution {
+
+    std::map<wchar_t, double> distribution;
+
 public:
     void setBaseDistribution(std::map<wchar_t, int> histogram);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring context);
+};
+
+/**
+ * @brief Finite context distribution class.
+ * 
+ * This class implements a frequency distribution taking a context of k symbols into account.
+ * 
+ */
+
+class FiniteContextDistribution : public BaseDistribution {
+
+    std::map<std::wstring, std::map<wchar_t, double>> context_table;
+    std::vector<wchar_t> alphabet;
+    double alpha;
+
+public:
+    void setParameters(double alpha);
+    void setBaseDistribution(std::map<wchar_t, int> histogram);
+    void updateWithContext(std::wstring context, wchar_t symbol);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring context);
 };
