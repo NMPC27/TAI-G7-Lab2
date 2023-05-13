@@ -15,7 +15,7 @@
 
 using namespace std;
 
-/** @brief Maximum number of unique copy pointers */
+/** @brief Maximum number of unique copy pointer thresholds */
 #define POINTER_THRESHOLD_MAX_NUMBER 3
 #define POINTER_THRESHOLD_MASK_STATIC 1
 #define POINTER_THRESHOLD_MASK_DERIVATIVE 2
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
              * m: machine
              * p: progress
             */ 
-            // TODO: possibly refactor this, it's may be useful to combine functionalities from different modes
+            // TODO: possibly refactor this, it is useful to combine functionalities from different modes
             case 'v':
                 switch (optarg[0]) {
                     case 'h':
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
                         verbose_mode = VerboseMode::machine;
                         {
                         string optarg_string = string(optarg);
-                        int pos = optarg_string.find(":");
+                        int pos = optarg_string.find(':');
 
                         if (pos != -1) {
                             verbose_mode_machine_filename = optarg_string.substr(pos+1, optarg_string.length());
@@ -104,19 +104,54 @@ int main(int argc, char** argv) {
                 alpha = stof(optarg);
                 break;
 
-            // base distribution : u (uniform) or f (frequency)
+            /* Base Distribution
+            
+            u: uniform
+            f: frequency
+            c:A:K finite-context model with alpha A and context size K
+            */
             case 'p':
-                if (optarg[0] == 'u') {
-                    base_distribution = new UniformDistribution(); 
-                } else if (optarg[0] == 'f') {
-                    base_distribution = new FrequencyDistribution();
-                } else {
-                    cerr << "Error: invalid option for '-p' (" << optarg[0] << ")" << endl;
-                    return 1;
+                switch (optarg[0]) {
+                    case 'u':
+                        base_distribution = new UniformDistribution();
+                        break;
+                    case 'f':
+                        base_distribution = new FrequencyDistribution();
+                        break;
+                    case 'c':
+                        {
+                        string optarg_string = string(optarg);
+                        int pos = optarg_string.find(':'); // Find the first ':' separator, ignoring the very first 'c' character
+                        int suboption_index = 0;
+                        double alpha = 1.0;
+                        int k = 3;
+
+                        while (pos != optarg_string.npos && suboption_index < 2) {
+                            int new_pos = optarg_string.find(':', pos + 1);
+
+                            switch (suboption_index){
+                                case 0:
+                                    alpha = stof(optarg_string.substr(pos + 1, new_pos - pos - 1));
+                                    break;
+                                case 1:
+                                    k = stoi(optarg_string.substr(pos + 1, new_pos - pos - 1));
+                                    break;
+                            }
+
+                            pos = new_pos;
+                            suboption_index++;
+                        }
+                        
+                        base_distribution = new FiniteContextDistribution(alpha, k);
+                        }
+                        break;
+                    default:
+                        cerr << "Error: invalid option for '-p' (" << optarg[0] << ")" << endl;
+                        return 1;
                 }
                 break;
 
-            /*Pointer manager options
+            /* Pointer Manager
 
             o: next oldest pointer
             n: recent pointer
@@ -126,7 +161,7 @@ int main(int argc, char** argv) {
             case 'r':
                 {
                 string optarg_string = string(optarg);
-                int pos = optarg_string.find(":");
+                int pos = optarg_string.find(':');
 
                 string opt = optarg_string.substr(0, pos);
                 string value = optarg_string.substr(pos+1, optarg_string.length());
@@ -425,12 +460,13 @@ void printOptions() {
     cout << "\t-p P\t\tProbability distribution of the characters other than the one being predicted (default: f):" << endl;
     cout << "\t\t\t\tu - uniform distribution" << endl;
     cout << "\t\t\t\tf - distribution based on the symbols' relative frequencies" << endl;
+    cout << "\t\t\t\tc:A:K - distribution based on a first-order finite context model, with alpha A and context size K (default A: 1.0, default K: 3)" << endl;
     cout << "\t-r R\t\tCopy pointer reposition (default: m):" << endl;
     cout << "\t\t\t\to - oldest" << endl;
     cout << "\t\t\t\tn - newer" << endl;
     cout << "\t\t\t\tm - most common prediction among all pointers" << endl;
     cout << "\t-t T\t\tThreshold for copy pointer switch (default: f:6):" << endl;
     cout << "\t\t\t\tn:X - static probability below X" << endl;
-    cout << "\t\t\t\tf:X - number of successive fails above X" << endl; //! temos de ver que o numero faz sentido
+    cout << "\t\t\t\tf:X - number of successive fails above X" << endl;
     cout << "\t\t\t\tc:X - absolute value of the negative derivative of the prediction probability above X" << endl;
 }

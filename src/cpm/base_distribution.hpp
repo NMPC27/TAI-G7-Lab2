@@ -74,6 +74,7 @@ public:
  * @brief Finite context distribution class.
  * 
  * This class implements a frequency distribution taking a context of k symbols into account.
+ * If the context passed to the methods is larger than k, then the last k symbols are extracted.
  * 
  */
 
@@ -81,10 +82,11 @@ class FiniteContextDistribution : public BaseDistribution {
 
     std::map<std::wstring, std::map<wchar_t, double>> context_table;
     std::vector<wchar_t> alphabet;
+    unsigned int k;
     double alpha;
 
 public:
-    void setParameters(double alpha);
+    FiniteContextDistribution(double alpha, unsigned int k) : alpha(alpha), k(k) {}
     void setBaseDistribution(std::map<wchar_t, int> histogram);
     void updateWithContext(std::wstring context, wchar_t symbol);
     std::map<wchar_t, double> getDistributionWithContext(std::wstring context);

@@ -29,10 +29,6 @@ std::map<wchar_t, double> FrequencyDistribution::getDistributionWithContext(std:
     return distribution;
 }
 
-void FiniteContextDistribution::setParameters(double alpha) {
-    this->alpha = alpha;
-}
-
 void FiniteContextDistribution::setBaseDistribution(std::map<wchar_t, int> histogram) {
     alphabet.clear();
     for (auto pair : histogram)
@@ -40,18 +36,21 @@ void FiniteContextDistribution::setBaseDistribution(std::map<wchar_t, int> histo
 }
 
 void FiniteContextDistribution::updateWithContext(std::wstring context, wchar_t symbol) {
+    std::wstring sub_context = context.substr(context.size() - k);
+
     // If the pattern was never seen before, initialize a new table
-    if (context_table.find(context) == context_table.end()) {
+    if (context_table.find(sub_context) == context_table.end()) {
         
-        context_table[context] = std::map<wchar_t, double>();
+        context_table[sub_context] = std::map<wchar_t, double>();
         for (wchar_t alphabet_symbol : alphabet)
-            context_table[context][alphabet_symbol] = 0;
+            context_table[sub_context][alphabet_symbol] = 0;
     }
 
-    context_table[context][symbol]++;
+    context_table[sub_context][symbol]++;
 }
 
 std::map<wchar_t, double> FiniteContextDistribution::getDistributionWithContext(std::wstring context) {
+    std::wstring sub_context = context.substr(context.size() - k);
     std::map<wchar_t, double> distribution;
     
     int sum = 0;
