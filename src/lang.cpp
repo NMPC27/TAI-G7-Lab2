@@ -42,7 +42,6 @@ int main(int argc, char** argv) {
     double alpha = 1.0;
     enum VerboseMode{human, machine, progress, minimal, none} verbose_mode = VerboseMode::none;
     string verbose_mode_machine_filename = "lang.bin";
-    ReadingStrategy* reading_strategy = nullptr;
     CopyPointerThreshold* pointer_thresholds[POINTER_THRESHOLD_MAX_NUMBER];
     int pointer_threshold_number = 0;
     int pointer_threshold_mask = 0;
@@ -260,7 +259,6 @@ int main(int argc, char** argv) {
     }
 
     // Defaults
-    if (reading_strategy == nullptr) reading_strategy = new InMemoryReadingStrategy();
     if (pointer_threshold_number == 0) {
         pointer_thresholds[pointer_threshold_number] = new SuccessFailsCopyPointerThreshold(6);
         pointer_threshold_number++;
@@ -269,7 +267,7 @@ int main(int argc, char** argv) {
     if (base_distribution == nullptr) base_distribution = new FrequencyDistribution();
 
     // Copy model initialization
-    CopyModel model = CopyModel(k, alpha, reading_strategy, pointer_thresholds, pointer_threshold_number, pointer_manager, base_distribution);
+    CopyModel model = CopyModel(k, alpha, pointer_thresholds, pointer_threshold_number, pointer_manager, base_distribution);
 
     string reference = string(argv[optind]);
     string target = string(argv[optind + 1]);
@@ -394,7 +392,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    delete reading_strategy;
     for (int i = 0; i < pointer_threshold_number; i++)
         delete pointer_thresholds[i];
     delete pointer_manager;

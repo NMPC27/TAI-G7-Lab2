@@ -2,7 +2,6 @@
 #include <string>
 #include <map>
 #include <cwchar>
-#include "parser.hpp"
 #include "copy_pointer_threshold.hpp"
 #include "copy_pointer_manager.hpp"
 #include "base_distribution.hpp"
@@ -76,12 +75,12 @@ class CopyModel {
 
     int k;
     double alpha;
-    ReadingStrategy* reading_strategy;
     CopyPointerThreshold** pointer_threshold;
     int pointer_threshold_number;
     CopyPointerManager* pointer_manager;
     BaseDistribution* base_distribution;
 
+    std::vector<wchar_t> mem_file;
     std::map<wchar_t, int> alphabet_counts;
     
     size_t current_position = -1;
@@ -90,8 +89,8 @@ class CopyModel {
     std::wstring copy_pattern;
 
 public:
-    CopyModel(int k, double alpha, ReadingStrategy* rs, CopyPointerThreshold** pt, int ptn, CopyPointerManager* pm, BaseDistribution* bd) : 
-        k(k), alpha(alpha), reading_strategy(rs), pointer_threshold(pt), pointer_threshold_number(ptn), pointer_manager(pm), base_distribution(bd) {}
+    CopyModel(int k, double alpha, CopyPointerThreshold** pt, int ptn, CopyPointerManager* pm, BaseDistribution* bd) : 
+        k(k), alpha(alpha), pointer_threshold(pt), pointer_threshold_number(ptn), pointer_manager(pm), base_distribution(bd) {}
 
 /**
  * @brief Registers the position of the pattern read in the file to a map (key = pattern, value = array of pointers where that pattern was detected), located in the pointer_manager.

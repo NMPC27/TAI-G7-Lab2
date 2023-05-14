@@ -10,5 +10,5 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 # Output final binaries to the 'bin' folder
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
-add_executable(lang src/lang.cpp src/cpm/cpm.cpp src/cpm/parser.cpp src/cpm/base_distribution.cpp src/cpm/copy_pointer_manager.cpp src/cpm/copy_pointer_threshold.cpp)
+add_executable(lang src/lang.cpp src/cpm/cpm.cpp src/cpm/base_distribution.cpp src/cpm/copy_pointer_manager.cpp src/cpm/copy_pointer_threshold.cpp)
 

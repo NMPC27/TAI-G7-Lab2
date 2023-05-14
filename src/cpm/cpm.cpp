@@ -29,9 +29,9 @@ bool CopyModel::isPatternRegistered() {
 // TODO: PERFORMANCE: avoid changing the current_pattern when passing through the reference text, we can simply increment current_position
 void CopyModel::advance() {
     // Update the base distribution with the current context (the current pattern) before advancing
-    base_distribution->updateWithContext(current_pattern, reading_strategy->at(current_position));
+    base_distribution->updateWithContext(current_pattern, mem_file.at(current_position + 1));
     // Update current pattern and advance read pointer (current_position)
-    current_pattern += reading_strategy->at(++current_position);
+    current_pattern += mem_file.at(++current_position);
     current_pattern.erase(0, 1);
     // Advance copy pointer
     copy_position++;
@@ -54,7 +54,7 @@ bool CopyModel::predictionSetup(bool pattern_has_past) {
     // Check whether copy pointer should be changed
     else if (surpassedAnyThreshold(hit_probability)) {
 
-        pointer_manager->repositionCopyPointer(copy_pattern, reading_strategy);
+        pointer_manager->repositionCopyPointer(copy_pattern, &mem_file);
         // Change copy pointer to a new one, this one being from the current pattern
         copy_pattern = current_pattern;
         // If the model is learning (registering patterns), then we can attempt another copy right now (since current_pattern must have been registered)
@@ -74,8 +74,8 @@ bool CopyModel::predictionSetup(bool pattern_has_past) {
 
 bool CopyModel::predict() {
 
-    prediction = reading_strategy->at(copy_position + 1);
-    actual = reading_strategy->at(current_position + 1);
+    prediction = mem_file.at(copy_position + 1);
+    actual = mem_file.at(current_position + 1);
 
     bool hit = prediction == actual;
 
@@ -97,7 +97,7 @@ void CopyModel::firstPass(std::string file_name) {
     wchar_t c = file.get();
     
     while (!file.eof()) {
-        reading_strategy->read(c);
+        mem_file.push_back(c);
 
         alphabet_counts.insert({c, 0});
         alphabet_counts[c]++;
@@ -120,7 +120,7 @@ void CopyModel::appendFuture(std::string file_name) {
     wchar_t c = file.get();
     
     while (!file.eof()) {
-        reading_strategy->read(c);
+        mem_file.push_back(c);
         c = file.get();
     }
 
@@ -129,7 +129,7 @@ void CopyModel::appendFuture(std::string file_name) {
 
 bool CopyModel::eof() {
     // We add one because we don't want to predict a character outside of the stream, so we end earlier
-    return current_position + 1 >= reading_strategy->endOfStream();
+    return current_position + 1 >= mem_file.size();
 }
 
 int CopyModel::countOf(wchar_t c) {
@@ -152,12 +152,12 @@ void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_
 }
 
 double CopyModel::progress() {
-    return (double) current_position / reading_strategy->endOfStream();
+    return (double) current_position / mem_file.size();
 }
 
 void CopyModel::guess() {
 
-    actual = reading_strategy->at(current_position + 1);
+    actual = mem_file.at(current_position + 1);
     
     // Just return the base distribution
     prediction = '\0';
