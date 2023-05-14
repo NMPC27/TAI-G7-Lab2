@@ -3,7 +3,7 @@
 #include <list>
 #include "copy_pointer_manager.hpp"
 
-bool SimpleCopyPointerManager::registerCopyPointer(std::wstring pattern, size_t position) {
+bool SimpleCopyPointerManager::registerCopyPointer(std::wstring_view pattern, size_t position) {
     if (pointer_map.count(pattern) == 0) {
 
         struct SimplePointerInfo pattern_info = {
@@ -20,15 +20,16 @@ bool SimpleCopyPointerManager::registerCopyPointer(std::wstring pattern, size_t 
     return true;
 }
 
-bool SimpleCopyPointerManager::isPatternRegistered(std::wstring pattern) {
+bool SimpleCopyPointerManager::isPatternRegistered(std::wstring_view pattern) {
+    // TODO: use .find() instead?
     return pointer_map.count(pattern) != 0;
 }
 
-int SimpleCopyPointerManager::getCopyPointer(std::wstring pattern) {
+int SimpleCopyPointerManager::getCopyPointer(std::wstring_view pattern) {
     return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
 }
 
-void SimpleCopyPointerManager::reportPrediction(std::wstring pattern, bool hit) {
+void SimpleCopyPointerManager::reportPrediction(std::wstring_view pattern, bool hit) {
     if (hit) {
         hits++;
     } else {
@@ -41,11 +42,11 @@ void SimpleCopyPointerManager::reset() {
     misses = 0;
 }
 
-int SimpleCopyPointerManager::getHits(std::wstring current_pattern) { return hits; }
+int SimpleCopyPointerManager::getHits(std::wstring_view current_pattern) { return hits; }
 
-int SimpleCopyPointerManager::getMisses(std::wstring current_pattern) { return misses; }
+int SimpleCopyPointerManager::getMisses(std::wstring_view current_pattern) { return misses; }
 
-bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring pattern, size_t position) {
+bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring_view pattern, size_t position) {
     if (pointer_map.count(pattern) == 0) {
 
         struct CircularArrayPointerInfo pattern_info = {
@@ -72,15 +73,15 @@ bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring pattern, 
     return true;
 }
 
-bool CircularArrayCopyPointerManager::isPatternRegistered(std::wstring pattern) {
+bool CircularArrayCopyPointerManager::isPatternRegistered(std::wstring_view pattern) {
     return pointer_map.count(pattern) != 0;
 }
 
-int CircularArrayCopyPointerManager::getCopyPointer(std::wstring pattern) {
+int CircularArrayCopyPointerManager::getCopyPointer(std::wstring_view pattern) {
     return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
 }
 
-void CircularArrayCopyPointerManager::reportPrediction(std::wstring pattern, bool hit) {
+void CircularArrayCopyPointerManager::reportPrediction(std::wstring_view pattern, bool hit) {
     if (hit) {
         hits++;
     } else {
@@ -93,12 +94,11 @@ void CircularArrayCopyPointerManager::reset() {
     misses = 0;
 }
 
-int CircularArrayCopyPointerManager::getHits(std::wstring current_pattern) { return hits; }
+int CircularArrayCopyPointerManager::getHits(std::wstring_view current_pattern) { return hits; }
 
-int CircularArrayCopyPointerManager::getMisses(std::wstring current_pattern) { return misses; }
+int CircularArrayCopyPointerManager::getMisses(std::wstring_view current_pattern) { return misses; }
 
-// TODO: avoid reading the future, it's possible!
-void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
+void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     
     // we should not consider the last pointer in the pointers array, since it's the one that was just added
     std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), std::prev(pointer_map[pattern].pointers.end()));
@@ -148,17 +148,16 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern
 
 }
 
-void RecentCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
+void RecentCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     // second to last copy pointer (because most recent could lead to predicting future)
     pointer_map[pattern].copy_pointer_index = pointer_map[pattern].pointers.size() - 2;
 }
 
-void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
+void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     pointer_map[pattern].copy_pointer_index += 1;
 }
 
-// TODO: avoid reading the future, it's possible!
-void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
+void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     
     // we can consider the last pointer in the pointers array, assuming the current pattern hasn't been added yet
     std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), pointer_map[pattern].pointers.end());

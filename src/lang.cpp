@@ -306,19 +306,23 @@ int main(int argc, char** argv) {
     }
 
     // First pass of the file to get the alphabet and compute the base distribution
-    model.firstPass(reference);
+    model.firstPassOverReference(reference);
 
     // Initialize the first k-pattern with the most frequent symbol
-    model.initializeWithMostFrequent();
+    model.initializeOnReference();
 
     // Train on the reference text
-    while (!model.eof()) {
+    while (!model.eofReference()) {
         model.registerPattern();
+        model.updateDistribution();
         model.advance();
     }
 
     // Train on the target text
-    model.firstPass(target);
+    model.firstPassOverTarget(target);
+
+    // Reposition the current pattern view (since the file in memory increased in size, it may be in another place)
+    model.initializeOnTarget();
 
     // Using the target's alphabet
     map<wchar_t, double> information_sums;
@@ -335,7 +339,7 @@ int main(int argc, char** argv) {
     }
 
     // Loop for prediction through the target
-    while (!model.eof()) {
+    while (!model.eofTarget()) {
 
         // Check if the current has been seen before in the reference text
         bool pattern_has_past = model.isPatternRegistered();

@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include <cwchar>
+#include <string_view>
 
 /**
  *  \file base_distribution.hpp (interface file)
@@ -34,8 +35,8 @@ public:
     virtual ~BaseDistribution() {};
     virtual void setParameters(double alpha) {};
     virtual void setBaseDistribution(std::map<wchar_t, int> histogram) = 0;
-    virtual void updateWithContext(std::wstring context, wchar_t symbol) {};
-    virtual std::map<wchar_t, double> getDistributionWithContext(std::wstring context) = 0;
+    virtual void updateWithContext(std::wstring_view context, wchar_t symbol) {};
+    virtual std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context) = 0;
 };
 
 /**
@@ -51,7 +52,7 @@ class UniformDistribution : public BaseDistribution {
 
 public:
     void setBaseDistribution(std::map<wchar_t, int> histogram);
-    std::map<wchar_t, double> getDistributionWithContext(std::wstring context);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
 };
 
 /**
@@ -67,7 +68,7 @@ class FrequencyDistribution : public BaseDistribution {
 
 public:
     void setBaseDistribution(std::map<wchar_t, int> histogram);
-    std::map<wchar_t, double> getDistributionWithContext(std::wstring context);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
 };
 
 /**
@@ -80,7 +81,7 @@ public:
 
 class FiniteContextDistribution : public BaseDistribution {
 
-    std::map<std::wstring, std::map<wchar_t, double>> context_table;
+    std::map<std::wstring_view, std::map<wchar_t, double>> context_table;
     std::vector<wchar_t> alphabet;
     unsigned int k;
     double alpha;
@@ -88,6 +89,6 @@ class FiniteContextDistribution : public BaseDistribution {
 public:
     FiniteContextDistribution(double alpha, unsigned int k) : alpha(alpha), k(k) {}
     void setBaseDistribution(std::map<wchar_t, int> histogram);
-    void updateWithContext(std::wstring context, wchar_t symbol);
-    std::map<wchar_t, double> getDistributionWithContext(std::wstring context);
+    void updateWithContext(std::wstring_view context, wchar_t symbol);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
 };
