@@ -97,7 +97,8 @@ int CircularArrayCopyPointerManager::getHits(std::wstring current_pattern) { ret
 
 int CircularArrayCopyPointerManager::getMisses(std::wstring current_pattern) { return misses; }
 
-void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern, ReadingStrategy* reading_strategy) {
+// TODO: avoid reading the future, it's possible!
+void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
     
     // we should not consider the last pointer in the pointers array, since it's the one that was just added
     std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), std::prev(pointer_map[pattern].pointers.end()));
@@ -114,7 +115,7 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern
 
         // Majority algorithm: first pass (determine most frequent)
         for (size_t pointer : pointer_candidates) {
-            wchar_t char_at_pointer = reading_strategy->at(pointer + offset);
+            wchar_t char_at_pointer = mem_file->at(pointer + offset);
 
             if (count == 0) {
                 most_frequent = char_at_pointer;
@@ -129,7 +130,7 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern
         // Majority algorithm: second pass (remove all pointers that don't match the most frequent)
         for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
             size_t pointer = *it;
-            if (reading_strategy->at(pointer + offset) == most_frequent)
+            if (mem_file->at(pointer + offset) == most_frequent)
                 it++;
             else
                 it = pointer_candidates.erase(it);
@@ -147,16 +148,17 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern
 
 }
 
-void RecentCopyPointerManager::repositionCopyPointer(std::wstring pattern, ReadingStrategy* reading_strategy) {
+void RecentCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
     // second to last copy pointer (because most recent could lead to predicting future)
     pointer_map[pattern].copy_pointer_index = pointer_map[pattern].pointers.size() - 2;
 }
 
-void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring pattern, ReadingStrategy* reading_strategy) {
+void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
     pointer_map[pattern].copy_pointer_index += 1;
 }
 
-void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring pattern, ReadingStrategy* reading_strategy) {
+// TODO: avoid reading the future, it's possible!
+void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
     
     // we can consider the last pointer in the pointers array, assuming the current pattern hasn't been added yet
     std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), pointer_map[pattern].pointers.end());
@@ -171,7 +173,7 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring pattern, R
 
         // First pass: majority algorithm (determine most frequent)
         for (size_t pointer : pointer_candidates) {
-            wchar_t char_at_pointer = reading_strategy->at(pointer + offset);
+            wchar_t char_at_pointer = mem_file->at(pointer + offset);
 
             if (count == 0) {
                 most_frequent = char_at_pointer;
@@ -186,7 +188,7 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring pattern, R
         // Second pass (remove all pointers that don't match the most frequent)
         for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
             size_t pointer = *it;
-            if (reading_strategy->at(pointer + offset) == most_frequent)
+            if (mem_file->at(pointer + offset) == most_frequent)
                 it++;
             else
                 it = pointer_candidates.erase(it);

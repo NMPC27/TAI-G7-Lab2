@@ -2,7 +2,6 @@
 #include <string>
 #include <map>
 #include <cwchar>
-#include "parser.hpp"
 
 /**
  *  \file copy_pointer_manager.hpp (interface file)
@@ -64,7 +63,7 @@ public:
  * @param reading_strategy
  * 
  */
-    virtual void repositionCopyPointer(std::wstring, ReadingStrategy*) = 0;
+    virtual void repositionCopyPointer(std::wstring, std::vector<wchar_t>*) = 0;
 /**
  * @brief Register a new copy pointer for a pattern.
  * 
@@ -155,7 +154,7 @@ public:
     void reset();
     int getHits(std::wstring);
     int getMisses(std::wstring);
-    void repositionCopyPointer(std::wstring, ReadingStrategy*);
+    void repositionCopyPointer(std::wstring, std::vector<wchar_t>*);
 };
 
 /**
@@ -168,7 +167,7 @@ public:
 
 class MostCommonCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::wstring, ReadingStrategy*);    
+    void repositionCopyPointer(std::wstring, std::vector<wchar_t>*);    
 };
 
 /**
@@ -178,7 +177,7 @@ public:
  */
 class RecentCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::wstring, ReadingStrategy*);
+    void repositionCopyPointer(std::wstring, std::vector<wchar_t>*);
 };
 
 /**
@@ -188,5 +187,5 @@ public:
  */
 class NextOldestCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::wstring, ReadingStrategy*);
+    void repositionCopyPointer(std::wstring, std::vector<wchar_t>*);
 };

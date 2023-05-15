@@ -25,9 +25,13 @@ bool CopyModel::isPatternRegistered() {
     return pointer_manager->isPatternRegistered(current_pattern);
 }
 
+// TODO: PERFORMANCE: circular array for current_pattern
+// TODO: PERFORMANCE: avoid changing the current_pattern when passing through the reference text, we can simply increment current_position
 void CopyModel::advance() {
+    // Update the base distribution with the current context (the current pattern) before advancing
+    base_distribution->updateWithContext(current_pattern, mem_file.at(current_position + 1));
     // Update current pattern and advance read pointer (current_position)
-    current_pattern += reading_strategy->at(++current_position);
+    current_pattern += mem_file.at(++current_position);
     current_pattern.erase(0, 1);
     // Advance copy pointer
     copy_position++;
@@ -50,7 +54,7 @@ bool CopyModel::predictionSetup(bool pattern_has_past) {
     // Check whether copy pointer should be changed
     else if (surpassedAnyThreshold(hit_probability)) {
 
-        pointer_manager->repositionCopyPointer(copy_pattern, reading_strategy);
+        pointer_manager->repositionCopyPointer(copy_pattern, &mem_file);
         // Change copy pointer to a new one, this one being from the current pattern
         copy_pattern = current_pattern;
         // If the model is learning (registering patterns), then we can attempt another copy right now (since current_pattern must have been registered)
@@ -70,15 +74,15 @@ bool CopyModel::predictionSetup(bool pattern_has_past) {
 
 bool CopyModel::predict() {
 
-    prediction = reading_strategy->at(copy_position + 1);
-    actual = reading_strategy->at(current_position + 1);
+    prediction = mem_file.at(copy_position + 1);
+    actual = mem_file.at(current_position + 1);
 
     bool hit = prediction == actual;
 
     pointer_manager->reportPrediction(current_pattern, hit);
 
     // Update internal probability distribution
-    setRemainderProbabilities(prediction, 1.0 - hit_probability);
+    setRemainderProbabilities(prediction, 1.0 - hit_probability, base_distribution->getDistributionWithContext(current_pattern));
     // TODO: raise error if not present?
     probability_distribution[prediction] = hit_probability;
 
@@ -93,7 +97,7 @@ void CopyModel::firstPass(std::string file_name) {
     wchar_t c = file.get();
     
     while (!file.eof()) {
-        reading_strategy->read(c);
+        mem_file.push_back(c);
 
         alphabet_counts.insert({c, 0});
         alphabet_counts[c]++;
@@ -104,7 +108,8 @@ void CopyModel::firstPass(std::string file_name) {
     file.close();
 
     base_distribution->setBaseDistribution(alphabet_counts);
-    probability_distribution = std::map<wchar_t, double>(base_distribution->distribution);
+    for (auto pair : alphabet_counts)
+        probability_distribution[pair.first] = 0;
 }
 
 void CopyModel::appendFuture(std::string file_name) {
@@ -115,7 +120,7 @@ void CopyModel::appendFuture(std::string file_name) {
     wchar_t c = file.get();
     
     while (!file.eof()) {
-        reading_strategy->read(c);
+        mem_file.push_back(c);
         c = file.get();
     }
 
@@ -124,7 +129,7 @@ void CopyModel::appendFuture(std::string file_name) {
 
 bool CopyModel::eof() {
     // We add one because we don't want to predict a character outside of the stream, so we end earlier
-    return current_position + 1 >= reading_strategy->endOfStream();
+    return current_position + 1 >= mem_file.size();
 }
 
 int CopyModel::countOf(wchar_t c) {
@@ -135,29 +140,29 @@ double CopyModel::calculateProbability(int hits, int misses) {
     return (hits + alpha) / (hits + misses + 2 * alpha);
 }
 
-void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute) {
+void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute, std::map<wchar_t, double> distribution) {
     double base_remainder_total = 0.0;
-    for (auto pair : base_distribution->distribution)
+    for (auto pair : distribution)
         if (pair.first != exception)
             base_remainder_total += pair.second;
     
-    for (auto pair : base_distribution->distribution)
+    for (auto pair : distribution)
         if (pair.first != exception)
-            probability_distribution[pair.first] = probability_to_distribute * base_distribution->distribution[pair.first] / base_remainder_total;
+            probability_distribution[pair.first] = probability_to_distribute * distribution[pair.first] / base_remainder_total;
 }
 
 double CopyModel::progress() {
-    return (double) current_position / reading_strategy->endOfStream();
+    return (double) current_position / mem_file.size();
 }
 
 void CopyModel::guess() {
 
-    actual = reading_strategy->at(current_position + 1);
+    actual = mem_file.at(current_position + 1);
     
     // Just return the base distribution
     prediction = '\0';
     hit_probability = 0;
-    probability_distribution = base_distribution->distribution;
+    probability_distribution = base_distribution->getDistributionWithContext(current_pattern);
 }
 
 bool CopyModel::surpassedAnyThreshold(double hit_probability) {

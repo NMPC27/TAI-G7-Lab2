@@ -4,8 +4,6 @@
 #include <map>
 
 
-void outputProbabilityDistributionCSVheader();
-void outputProbabilityDistributionCSVbody(wchar_t prediction, wchar_t actual, double hit_probability, std::map<wchar_t, double> distribution);
 void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, std::map<wchar_t, double> base_distribution);
 
 // Options

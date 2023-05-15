@@ -15,7 +15,7 @@
 
 using namespace std;
 
-/** @brief Maximum number of unique copy pointers */
+/** @brief Maximum number of unique copy pointer thresholds */
 #define POINTER_THRESHOLD_MAX_NUMBER 3
 #define POINTER_THRESHOLD_MASK_STATIC 1
 #define POINTER_THRESHOLD_MASK_DERIVATIVE 2
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     int k = 12;
     double alpha = 1.0;
     enum VerboseMode{human, machine, progress, minimal, none} verbose_mode = VerboseMode::none;
-    ReadingStrategy* reading_strategy = nullptr;
+    string verbose_mode_machine_filename = "lang.bin";
     CopyPointerThreshold* pointer_thresholds[POINTER_THRESHOLD_MAX_NUMBER];
     int pointer_threshold_number = 0;
     int pointer_threshold_mask = 0;
@@ -61,6 +61,7 @@ int main(int argc, char** argv) {
              * m: machine
              * p: progress
             */ 
+            // TODO: possibly refactor this, it is useful to combine functionalities from different modes
             case 'v':
                 switch (optarg[0]) {
                     case 'h':
@@ -68,6 +69,17 @@ int main(int argc, char** argv) {
                         break;
                     case 'm':
                         verbose_mode = VerboseMode::machine;
+                        {
+                        string optarg_string = string(optarg);
+                        int pos = optarg_string.find(':');
+
+                        if (pos != -1) {
+                            verbose_mode_machine_filename = optarg_string.substr(pos+1, optarg_string.length());
+                            
+                            if (verbose_mode_machine_filename.length() == 0)
+                                cerr << "Error: filename for the '-v m:X' option must be specified (no value for X)!" << endl;
+                        }
+                        }
                         break;
                     case 'p':
                         verbose_mode = VerboseMode::progress;
@@ -91,19 +103,54 @@ int main(int argc, char** argv) {
                 alpha = stof(optarg);
                 break;
 
-            // base distribution : u (uniform) or f (frequency)
+            /* Base Distribution
+            
+            u: uniform
+            f: frequency
+            c:A:K finite-context model with alpha A and context size K
+            */
             case 'p':
-                if (optarg[0] == 'u') {
-                    base_distribution = new UniformDistribution(); 
-                } else if (optarg[0] == 'f') {
-                    base_distribution = new FrequencyDistribution();
-                } else {
-                    cerr << "Error: invalid option for '-p' (" << optarg[0] << ")" << endl;
-                    return 1;
+                switch (optarg[0]) {
+                    case 'u':
+                        base_distribution = new UniformDistribution();
+                        break;
+                    case 'f':
+                        base_distribution = new FrequencyDistribution();
+                        break;
+                    case 'c':
+                        {
+                        string optarg_string = string(optarg);
+                        int pos = optarg_string.find(':'); // Find the first ':' separator, ignoring the very first 'c' character
+                        int suboption_index = 0;
+                        double alpha = 1.0;
+                        int k = 3;
+
+                        while (pos != optarg_string.npos && suboption_index < 2) {
+                            int new_pos = optarg_string.find(':', pos + 1);
+
+                            switch (suboption_index){
+                                case 0:
+                                    alpha = stof(optarg_string.substr(pos + 1, new_pos - pos - 1));
+                                    break;
+                                case 1:
+                                    k = stoi(optarg_string.substr(pos + 1, new_pos - pos - 1));
+                                    break;
+                            }
+
+                            pos = new_pos;
+                            suboption_index++;
+                        }
+                        
+                        base_distribution = new FiniteContextDistribution(alpha, k);
+                        }
+                        break;
+                    default:
+                        cerr << "Error: invalid option for '-p' (" << optarg[0] << ")" << endl;
+                        return 1;
                 }
                 break;
 
-            /*Pointer manager options
+            /* Pointer Manager
 
             o: next oldest pointer
             n: recent pointer
@@ -113,7 +160,7 @@ int main(int argc, char** argv) {
             case 'r':
                 {
                 string optarg_string = string(optarg);
-                int pos = optarg_string.find(":");
+                int pos = optarg_string.find(':');
 
                 string opt = optarg_string.substr(0, pos);
                 string value = optarg_string.substr(pos+1, optarg_string.length());
@@ -212,7 +259,6 @@ int main(int argc, char** argv) {
     }
 
     // Defaults
-    if (reading_strategy == nullptr) reading_strategy = new InMemoryReadingStrategy();
     if (pointer_threshold_number == 0) {
         pointer_thresholds[pointer_threshold_number] = new SuccessFailsCopyPointerThreshold(6);
         pointer_threshold_number++;
@@ -221,7 +267,7 @@ int main(int argc, char** argv) {
     if (base_distribution == nullptr) base_distribution = new FrequencyDistribution();
 
     // Copy model initialization
-    CopyModel model = CopyModel(k, alpha, reading_strategy, pointer_thresholds, pointer_threshold_number, pointer_manager, base_distribution);
+    CopyModel model = CopyModel(k, alpha, pointer_thresholds, pointer_threshold_number, pointer_manager, base_distribution);
 
     string reference = string(argv[optind]);
     string target = string(argv[optind + 1]);
@@ -238,6 +284,27 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // Initialize the verbose machine output file (option '-v m')
+    ofstream verbose_mode_machine_file;
+    vector<double> verbose_mode_machine_file_buffer;
+    if (verbose_mode == VerboseMode::machine) {
+        if (stat(verbose_mode_machine_filename.c_str(), &file_status) == 0) {
+            cout << "Warning: file '" << verbose_mode_machine_filename << "' already exists. Do you want to overwrite it? [y/N]: ";
+            string answer;
+            getline(cin, answer);
+            if (answer != "y" && answer != "Y") {
+                cout << "Overwrite not allowed, quitting..." << endl;
+                return 0;
+            }
+        }
+
+        verbose_mode_machine_file = ofstream(verbose_mode_machine_filename, ios::out | ios::binary | ios::trunc);
+        if (!verbose_mode_machine_file.good()) {
+            cerr << "Error: couldn't open file '" << verbose_mode_machine_filename << "' for writing!" << endl;
+            return 1;
+        }
+    }
+
     // First pass of the file to get the alphabet and compute the base distribution
     model.firstPass(reference);
 
@@ -250,15 +317,22 @@ int main(int argc, char** argv) {
         model.advance();
     }
 
-    if (verbose_mode == VerboseMode::machine)
-        outputProbabilityDistributionCSVheader();
-
-    // Substitute with the target's alphabet
+    // Train on the target text
     model.firstPass(target);
-    // model.appendFuture(target);
 
-    // TODO: should use the reference or the target's alphabet?
+    // Using the target's alphabet
     map<wchar_t, double> information_sums;
+
+    // Reserve space for the verbose machine mode output file buffer
+    if (verbose_mode == VerboseMode::machine) {
+        // This is the number of characters in the target file only
+        int total_number_of_characters = 0;
+        for(std::map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+            total_number_of_characters += model.countOf(it->first);
+        }
+
+        verbose_mode_machine_file_buffer.reserve(total_number_of_characters);
+    }
 
     // Loop for prediction through the target
     while (!model.eof()) {
@@ -282,6 +356,9 @@ int main(int argc, char** argv) {
 
         // The probability distribution that the model provides doesn't account for whether or not the current prediction was a success,
         // as that would incorporate information from the future which would not be known to the decoder.
+        information_sums[model.actual] += -log2(model.probability_distribution[model.actual]);
+
+        // Output the relevant information at this step
         switch (verbose_mode) {
             case VerboseMode::human:
                 {
@@ -306,22 +383,24 @@ int main(int argc, char** argv) {
                 }
                 break;
             case VerboseMode::machine:
-                outputProbabilityDistributionCSVbody(model.prediction, model.actual, model.hit_probability, model.probability_distribution);
-                break;
+                verbose_mode_machine_file_buffer.push_back(-log2(model.probability_distribution[model.actual]));
             case VerboseMode::progress:
                 printf("Progress: %3f%%\r", model.progress() * 100);
                 break;
             default:
                 break;
         }
-        information_sums[model.actual] += -log2(model.probability_distribution[model.actual]);
     }
 
-    delete reading_strategy;
     for (int i = 0; i < pointer_threshold_number; i++)
         delete pointer_thresholds[i];
     delete pointer_manager;
     delete base_distribution;
+
+    if (verbose_mode == VerboseMode::machine) {
+        verbose_mode_machine_file.write((char*) verbose_mode_machine_file_buffer.data(), verbose_mode_machine_file_buffer.size() * sizeof(double));
+        verbose_mode_machine_file.close();
+    }
 
     if (verbose_mode == VerboseMode::minimal) {
         double information_sum = 0.0;
@@ -361,18 +440,6 @@ void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, doub
     cout << endl;
 }
 
-void outputProbabilityDistributionCSVheader() {
-    cout << "Prediction, Actual, Hit probability, Distribution" << endl;
-}
-
-void outputProbabilityDistributionCSVbody(wchar_t prediction, wchar_t actual, double hit_probability, map<wchar_t, double> distribution) {
-    cout << prediction << "," << actual << "," << hit_probability << ",";
-    for (auto pair : distribution) {
-        cout << pair.first << "\t" << pair.second << "\t";
-    }
-    cout << endl;
-}
-
 void printUsage(char* prog_name) {
     cout << "Usage: " << prog_name << " [OPTIONS] reference target" << endl;
 }
@@ -380,9 +447,9 @@ void printUsage(char* prog_name) {
 void printOptions() {
     cout << "Options:" << endl;
     cout << "\t-h\t\tShow this help message" << endl;
-    cout << "\t-v V\t\tAdditional output (verbose modes output the probability distribution at each encoding step):" << endl;
-    cout << "\t\t\t\th - Human-readable verbose output, color-coded depending on whether a hit/miss/guess occurred" << endl;
-    cout << "\t\t\t\tm - Machine-readable verbose output, without color-coding and minimal flair (CSV format with header)" << endl;
+    cout << "\t-v V\t\tAdditional output:" << endl;
+    cout << "\t\t\t\th - Human-readable probability distributions at each step, color-coded depending on whether a hit/miss/guess occurred" << endl;
+    cout << "\t\t\t\tm:X - Output the symbol information at each step to the file X, as a sequence of 8-byte doubles. Also prints progress (default: lang.bin)" << endl;
     cout << "\t\t\t\tp - Print the progress of processing the sequence" << endl;
     cout << "\t\t\t\to - Print only the total number of bits to standard output" << endl;
     cout << "\t-k K\t\tSize of the sliding window (default: 12)" << endl;
@@ -390,12 +457,13 @@ void printOptions() {
     cout << "\t-p P\t\tProbability distribution of the characters other than the one being predicted (default: f):" << endl;
     cout << "\t\t\t\tu - uniform distribution" << endl;
     cout << "\t\t\t\tf - distribution based on the symbols' relative frequencies" << endl;
+    cout << "\t\t\t\tc:A:K - distribution based on a first-order finite context model, with alpha A and context size K (default A: 1.0, default K: 3)" << endl;
     cout << "\t-r R\t\tCopy pointer reposition (default: m):" << endl;
     cout << "\t\t\t\to - oldest" << endl;
     cout << "\t\t\t\tn - newer" << endl;
     cout << "\t\t\t\tm - most common prediction among all pointers" << endl;
     cout << "\t-t T\t\tThreshold for copy pointer switch (default: f:6):" << endl;
     cout << "\t\t\t\tn:X - static probability below X" << endl;
-    cout << "\t\t\t\tf:X - number of successive fails above X" << endl; //! temos de ver que o numero faz sentido
+    cout << "\t\t\t\tf:X - number of successive fails above X" << endl;
     cout << "\t\t\t\tc:X - absolute value of the negative derivative of the prediction probability above X" << endl;
 }
