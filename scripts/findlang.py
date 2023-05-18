@@ -12,14 +12,12 @@ def print_progress(progress: float, message: str):
     print(f'[{progress:.2%}] {message:100}', end='\r')
 
 
-def main(target: str, land_args: List[str], quit_at_error: bool=False):
+def main(target_path: str, lang_args: List[str], quit_at_error: bool=False):
 
-    project_path = getcwd()
-    lang_path = join(project_path, 'bin', 'lang')
+    lang_path = join('bin', 'lang')
     print(f'Using copy model in \'{lang_path}\'')
 
-    references_folder_path = join(project_path, 'example', 'reference')
-    target_path = join(project_path, target)
+    references_folder_path = join('example', 'reference')
 
     print_progress(0, 'Starting to analyze references...')
     reference_names = [reference_name for reference_name in listdir(references_folder_path) if reference_name != '.empty']
@@ -30,7 +28,7 @@ def main(target: str, land_args: List[str], quit_at_error: bool=False):
         reference_path = join(references_folder_path, reference_name)
         
         print_progress(progress / total_references, f'Running reference {reference_name}...')
-        completed_process = subprocess.run([lang_path, *land_args, '-v', 'o', reference_path, target_path], capture_output=True)
+        completed_process = subprocess.run([lang_path, *lang_args, '-v', 'o', reference_path, target_path], capture_output=True)
         print_progress((progress + 1) / total_references, f'Entropy for reference {reference_name} calculated.')
 
         if completed_process.stderr:
@@ -51,8 +49,11 @@ def main(target: str, land_args: List[str], quit_at_error: bool=False):
 
 
 if __name__ == '__main__':
+
+    default_str = ' (default: %(default)s)'
+
     parser = argparse.ArgumentParser(
-        prog='findLang',
+        prog='findlang',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description='''Run the 'lang' program with all reference texts against a given target text and output the language with the lowest reported entropy.
 Should run at the root of the project.
@@ -60,7 +61,7 @@ In order to pass the list of arguments 'land_args', put those arguments at the e
 
 Example: findLang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, help='path to the target text whose language will be estimated')
-    parser.add_argument('-q', '--quit-at-error', action='store_true', help='whether the script should quit as soon as an error from \'lang\' is suspected (default: False)')
+    parser.add_argument('-q', '--quit-at-error', action='store_true', help='whether the script should quit as soon as an error from \'lang\' is suspected' + default_str)
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 
     args = parser.parse_args()
