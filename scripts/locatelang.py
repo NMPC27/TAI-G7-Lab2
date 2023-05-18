@@ -7,7 +7,7 @@ import numpy.typing as npt
 from typing import List, Tuple
 
 
-CACHED_INFORMATION_BIN_FORMAT = 'lang_%s.bin'
+CACHED_INFORMATION_BIN_FORMAT = 'lang_{reference}.bin'
 
 
 def low_pass_filter(signal: npt.ArrayLike, frequency_dropoff: float = 1e4) -> np.ndarray:
@@ -71,7 +71,7 @@ def setup_target_bins_cache(target_path: str, bins_folder: str) -> Tuple[str, st
     
     # If the cache is not setup, then create the cache folder and info
     if not os.path.isdir(target_cache_path):
-        os.mkdir(target_cache_path)
+        os.makedirs(target_cache_path)
         with open(target_cache_info_path, 'wt') as f:
             f.write(target_path)
     
@@ -100,15 +100,16 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
     async def launch_subprocess_lang(process_task_registry: List[asyncio.Task]):
         reference = references_to_calculate_remaining.pop()
         reference_path = os.path.join(references_folder, reference)
-        reference_cached_result_path = os.path.join(cache_folder, CACHED_INFORMATION_BIN_FORMAT.format(reference))
+        reference_cached_result_path = os.path.join(cache_folder, CACHED_INFORMATION_BIN_FORMAT.format(reference=reference))
 
-        process = await asyncio.create_subprocess_exec(lang_path, *lang_args, '-v', 'm:' + reference_cached_result_path, reference_path, target_path)
+        process = await asyncio.create_subprocess_exec(lang_path, *lang_args, '-v', 'm:' + reference_cached_result_path, reference_path, target_path, stdout=asyncio.subprocess.DEVNULL)
         process_task_registry.append(asyncio.create_task(process.wait()))
         print_progress(f'Launched subprocess running reference {reference}...')
 
     # Launch the first max_process processes, to kickstart the next loop
     for _ in range(max_parallel_processes):
-        launch_subprocess_lang(lang_sub_processes)
+        if len(references_to_calculate_remaining) > 0:
+            await launch_subprocess_lang(lang_sub_processes)
         
     while len(lang_sub_processes) > 0:
         next_subprocesses = []
@@ -118,8 +119,8 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
             progress += 1
             print_progress('Information bin for a reference calculated and cached.')
 
-            if len(references_to_calculate_remaining > 0):
-                launch_subprocess_lang(next_subprocesses)
+            if len(references_to_calculate_remaining) > 0:
+                await launch_subprocess_lang(next_subprocesses)
         
         lang_sub_processes = next_subprocesses
 
@@ -137,8 +138,8 @@ def main(
     target_identifier, target_cache_path = setup_target_bins_cache(target_path, bins_folder)
 
     # If the information streams haven't been calculated yet, do so now
-    # Assume the CACHED_INFORMATION_BIN_FORMAT has a 4-character prefix and suffix
-    cached_references = {cached_bin[3:-4] for cached_bin in os.listdir(target_cache_path)}
+    # Assume the CACHED_INFORMATION_BIN_FORMAT has a 5-character prefix and 4-character suffix
+    cached_references = {cached_bin[5:-4] for cached_bin in os.listdir(target_cache_path) if cached_bin != '.info'}
     not_cached_references = references - cached_references
     n_not_cached_references = len(not_cached_references)
     if n_not_cached_references > 0:
@@ -154,11 +155,11 @@ def main(
     else:
         print('No informations bins were required to be recomputed, proceeding!')
 
-    information_bins = os.listdir(target_cache_path)
+    information_bins = [f for f in os.listdir(target_cache_path) if f != '.info']
 
-    assert len(information_bins) == len(references), 'ERROR: the number of calculated information \'.bin\' files is different from the number of references!'
+    assert len(information_bins) == len(references), "the number of calculated information '.bin' files is different from the number of references!"
 
-    information_stream_row = np.fromfile(os.path.join(bins_folder, information_bins[0]), np.float64)
+    information_stream_row = np.fromfile(os.path.join(target_cache_path, information_bins[0]), np.float64)
     information_streams = np.zeros((len(information_bins), information_stream_row.size))
     information_streams[0, :] = low_pass_filter(information_stream_row)
 
@@ -166,7 +167,7 @@ def main(
 
     for i, information_bin in enumerate(information_bins[1:]):
         data_to_filename[str(i+1)] = information_bin
-        information_stream_row = np.fromfile(os.path.join(bins_folder, information_bin), np.float64)
+        information_stream_row = np.fromfile(os.path.join(target_cache_path, information_bin), np.float64)
         information_streams[i+1, :] = low_pass_filter(information_stream_row)
 
     minimum_references_locations, minimum_references = spans_of_minimum_values(information_streams, minimum_threshold)
