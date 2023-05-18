@@ -153,15 +153,18 @@ def main(
         ))
 
     else:
-        print('No informations bins were required to be recomputed, proceeding!')
+        print('No information bins were required to be computed, proceeding!')
 
     information_bins = [f for f in os.listdir(target_cache_path) if f != '.info']
 
     assert len(information_bins) == len(references), "the number of calculated information '.bin' files is different from the number of references!"
 
+    print('Loading cached information bins', end='', flush=True)
+
     information_stream_row = np.fromfile(os.path.join(target_cache_path, information_bins[0]), np.float64)
     information_streams = np.zeros((len(information_bins), information_stream_row.size))
     information_streams[0, :] = low_pass_filter(information_stream_row)
+    print('.', end='', flush=True)
 
     data_to_filename = {'0': information_bins[0]}
 
@@ -169,12 +172,19 @@ def main(
         data_to_filename[str(i+1)] = information_bin
         information_stream_row = np.fromfile(os.path.join(target_cache_path, information_bin), np.float64)
         information_streams[i+1, :] = low_pass_filter(information_stream_row)
+        print('.', end='', flush=True)
+    
+    print(' done!')
 
+    print('Detecting language spans with method 1...', end='', flush=True)
     minimum_references_locations, minimum_references = spans_of_minimum_values(information_streams, minimum_threshold)
+    print(' done!')
 
+    print('Method 1 results:')
     print(minimum_references_locations)
-    print(minimum_references)
+    print([data_to_filename[str(reference_i)] for reference_i in minimum_references])
 
+    print('Detecting language spans with method 2...', end='', flush=True)
     # Generate contiguous intervals
     intervals = []
     start = None
@@ -196,7 +206,10 @@ def main(
     if start is not None:
         intervals.append((start, len(minimum_references),data_to_filename[str(minimum_references[start])] if minimum_references[start] != -1 else None))
 
+    print(' done!')
+
     # Print intervals
+    print('Method 2 results:')
     for interval in intervals:
         print(interval)
 
