@@ -2,6 +2,7 @@ import os
 import argparse
 import subprocess
 import asyncio
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from typing import List, Tuple
@@ -10,7 +11,7 @@ from typing import List, Tuple
 CACHED_INFORMATION_BIN_FORMAT = 'lang_{reference}.bin'
 
 
-def low_pass_filter(signal: npt.ArrayLike, frequency_dropoff: float = 1e4) -> np.ndarray:
+def low_pass_filter(signal: npt.ArrayLike, frequency_dropoff: float = 1e2) -> np.ndarray:
     """Apply a low pass filter over a signal.
     Downscales high frequencies exponentially on the frequency domain (FFT) and then rebuilds the signal (IFFT).
     `frequency_dropoff` controls how strong the exponential downscaling is (high values produce stronger filtering on lower frequencies).
@@ -174,6 +175,30 @@ def main(
         information_streams[i+1, :] = low_pass_filter(information_stream_row)
         print('.', end='', flush=True)
     
+    def count_different_letters(filename):
+        with open(filename, 'r') as file:
+            content = file.read()
+
+        #content = content.lower() ## convert to lowercase
+        #content = ''.join(filter(str.isalpha, content)) ## remove non-letters
+
+        unique_letters = set(content)
+        num_letters = len(unique_letters)
+
+        return num_letters
+
+    target_alphabet_size = count_different_letters(target_path)
+    minimum_threshold_test = np.log2(target_alphabet_size) / 2
+
+    print(target_alphabet_size)
+
+    plt.figure(figsize=(10, 10))
+    for i in range(len(information_bins)):
+        plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
+    plt.plot([minimum_threshold_test] * information_streams.shape[1])
+    plt.legend()
+    plt.show()
+
     print(' done!')
 
     print('Detecting language spans with method 1...', end='', flush=True)
