@@ -169,7 +169,7 @@ def main(
     fill_unknown: bool = False,
     use_static_threshold: bool = False,
     low_pass_filter_dropoff: float = 1e2,
-    plot:bool = False
+    plot: bool = False
 ):
 
     references = set(os.listdir(references_folder))
