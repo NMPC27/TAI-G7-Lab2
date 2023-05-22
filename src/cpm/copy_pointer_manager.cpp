@@ -114,7 +114,16 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring_view pa
         count = 0;
 
         // Majority algorithm: first pass (determine most frequent)
-        for (size_t pointer : pointer_candidates) {
+        for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
+            size_t pointer = *it;
+            // Remove the pointer candidate if it is starting to point outside of the message
+            if (pointer + offset < mem_file->size())
+                it++;
+            else {
+                it = pointer_candidates.erase(it);
+                continue;
+            }
+            
             wchar_t char_at_pointer = mem_file->at(pointer + offset);
 
             if (count == 0) {
@@ -130,7 +139,7 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring_view pa
         // Majority algorithm: second pass (remove all pointers that don't match the most frequent)
         for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
             size_t pointer = *it;
-            if (mem_file->at(pointer + offset) == most_frequent)
+            if ((pointer + offset < mem_file->size()) && mem_file->at(pointer + offset) == most_frequent)
                 it++;
             else
                 it = pointer_candidates.erase(it);
@@ -171,7 +180,16 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view patte
         count = 0;
 
         // First pass: majority algorithm (determine most frequent)
-        for (size_t pointer : pointer_candidates) {
+        for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
+            size_t pointer = *it;
+            // Remove the pointer candidate if it is starting to point outside of the message
+            if (pointer + offset < mem_file->size())
+                it++;
+            else {
+                it = pointer_candidates.erase(it);
+                continue;
+            }
+            
             wchar_t char_at_pointer = mem_file->at(pointer + offset);
 
             if (count == 0) {
@@ -187,7 +205,7 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view patte
         // Second pass (remove all pointers that don't match the most frequent)
         for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
             size_t pointer = *it;
-            if (mem_file->at(pointer + offset) == most_frequent)
+            if ((pointer + offset < mem_file->size()) && mem_file->at(pointer + offset) == most_frequent)
                 it++;
             else
                 it = pointer_candidates.erase(it);
