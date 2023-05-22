@@ -387,7 +387,7 @@ int main(int argc, char** argv) {
                 }
                 break;
             case VerboseMode::machine:
-                verbose_mode_machine_file_buffer.push_back(information_sums[model.actual]);
+                verbose_mode_machine_file_buffer.push_back(-log2(model.probability_distribution[model.actual]));
             case VerboseMode::progress:
                 printf("Progress: %3f%%\r", model.progress() * 100);
                 break;

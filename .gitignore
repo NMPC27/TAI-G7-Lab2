@@ -3,6 +3,7 @@
 release
 debug
 ignore
+results
 scripts/input/*
 scripts/processed/*
 report/*
