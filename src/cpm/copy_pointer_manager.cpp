@@ -16,7 +16,7 @@ bool SimpleCopyPointerManager::registerCopyPointer(std::wstring_view pattern, si
         return false;
     }
     
-    pointer_map[pattern].pointers.push_back(position);
+    pointer_map.at(pattern).pointers.push_back(position);
     return true;
 }
 
@@ -54,19 +54,18 @@ bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring_view patt
             .insertion_point = 1,
         };
 
-        pointer_map.insert({pattern, pattern_info});
+        pointer_map[pattern] = pattern_info;
         
         return false;
     }
 
-    if (pointer_map[pattern].insertion_point >= array_size)
-    {
-        pointer_map[pattern].pointers[(pointer_map[pattern].insertion_point % array_size)] = position;
-    }else{
-        pointer_map[pattern].pointers.insert(pointer_map[pattern].pointers.begin() + pointer_map[pattern].insertion_point, position);
+    if (pointer_map.at(pattern).insertion_point >= array_size) {
+        pointer_map.at(pattern).pointers[(pointer_map.at(pattern).insertion_point % array_size)] = position;
+    } else {
+        pointer_map.at(pattern).pointers.insert(pointer_map.at(pattern).pointers.begin() + pointer_map.at(pattern).insertion_point, position);
     }
 
-    pointer_map[pattern].insertion_point++;
+    pointer_map.at(pattern).insertion_point++;
 
     
     return true;
@@ -99,17 +98,14 @@ int CircularArrayCopyPointerManager::getMisses(std::wstring_view current_pattern
 
 void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     
-    // we should not consider the last pointer in the pointers array, since it's the one that was just added
-    std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), std::prev(pointer_map[pattern].pointers.end()));
+    // we can consider the last pointer in the pointers array, assuming the current pattern hasn't been added yet
+    std::list<size_t> pointer_candidates(pointer_map.at(pattern).pointers.begin(), std::prev(pointer_map.at(pattern).pointers.end()));
     
-    //printf("pointer_candidates.size(): %d",pointer_candidates.size());
-
     int count;
     int offset = 1;
     wchar_t most_frequent = '\0';
 
-    while (most_frequent == '\0' || count > 1){
-
+    do {
         count = 0;
 
         // Majority algorithm: first pass (determine most frequent)
@@ -145,24 +141,25 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring_view pa
         }
 
         offset++;
-    }
+
+    } while (count > 1);
 
     size_t pointer_candidate = pointer_candidates.back();
     unsigned int i;
-    for (i = 0; i < pointer_map[pattern].pointers.size(); i++)
-        if (pointer_map[pattern].pointers[i] == pointer_candidate)
+    for (i = 0; i < pointer_map.at(pattern).pointers.size(); i++)
+        if (pointer_map.at(pattern).pointers[i] == pointer_candidate)
             break;
-    pointer_map[pattern].copy_pointer_index = i;
+    pointer_map.at(pattern).copy_pointer_index = i;
 
 }
 
 void RecentCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     // second to last copy pointer (because most recent could lead to predicting future)
-    pointer_map[pattern].copy_pointer_index = pointer_map[pattern].pointers.size() - 2;
+    pointer_map.at(pattern).copy_pointer_index = pointer_map[pattern].pointers.size() - 2;
 }
 
 void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
-    pointer_map[pattern].copy_pointer_index += 1;
+    pointer_map.at(pattern).copy_pointer_index += 1;
 }
 
 void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
@@ -174,8 +171,7 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view patte
     int offset = 1;
     wchar_t most_frequent = '\0';
 
-    while (most_frequent == '\0' || count > 1){
-
+    do {
         count = 0;
 
         // First pass: majority algorithm (determine most frequent)
@@ -211,13 +207,14 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view patte
         }
 
         offset++;
-    }
+
+    } while (count > 1);
 
     size_t pointer_candidate = pointer_candidates.back();
     unsigned int i;
-    for (i = 0; i < pointer_map[pattern].pointers.size(); i++)
-        if (pointer_map[pattern].pointers[i] == pointer_candidate)
+    for (i = 0; i < pointer_map.at(pattern).pointers.size(); i++)
+        if (pointer_map.at(pattern).pointers[i] == pointer_candidate)
             break;
-    pointer_map[pattern].copy_pointer_index = i;
+    pointer_map.at(pattern).copy_pointer_index = i;
 
 }
