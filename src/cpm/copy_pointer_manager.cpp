@@ -4,14 +4,14 @@
 #include "copy_pointer_manager.hpp"
 
 bool SimpleCopyPointerManager::registerCopyPointer(std::wstring_view pattern, size_t position) {
-    if (pointer_map.count(pattern) == 0) {
+    if (!isPatternRegistered(pattern)) {
 
         struct SimplePointerInfo pattern_info = {
             .pointers = {position},
             .copy_pointer_index = 0,
         };
 
-        pointer_map.insert({pattern, pattern_info});
+        pointer_map[pattern] = pattern_info;
         
         return false;
     }
@@ -21,12 +21,11 @@ bool SimpleCopyPointerManager::registerCopyPointer(std::wstring_view pattern, si
 }
 
 bool SimpleCopyPointerManager::isPatternRegistered(std::wstring_view pattern) {
-    // TODO: use .find() instead?
-    return pointer_map.count(pattern) != 0;
+    return pointer_map.find(pattern) != pointer_map.end();
 }
 
 int SimpleCopyPointerManager::getCopyPointer(std::wstring_view pattern) {
-    return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
+    return pointer_map.at(pattern).pointers[pointer_map.at(pattern).copy_pointer_index];
 }
 
 void SimpleCopyPointerManager::reportPrediction(std::wstring_view pattern, bool hit) {
@@ -47,7 +46,7 @@ int SimpleCopyPointerManager::getHits(std::wstring_view current_pattern) { retur
 int SimpleCopyPointerManager::getMisses(std::wstring_view current_pattern) { return misses; }
 
 bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring_view pattern, size_t position) {
-    if (pointer_map.count(pattern) == 0) {
+    if (!isPatternRegistered(pattern)) {
 
         struct CircularArrayPointerInfo pattern_info = {
             .pointers = {position},
@@ -74,11 +73,11 @@ bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring_view patt
 }
 
 bool CircularArrayCopyPointerManager::isPatternRegistered(std::wstring_view pattern) {
-    return pointer_map.count(pattern) != 0;
+    return pointer_map.find(pattern) != pointer_map.end();
 }
 
 int CircularArrayCopyPointerManager::getCopyPointer(std::wstring_view pattern) {
-    return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
+    return pointer_map.at(pattern).pointers[pointer_map.at(pattern).copy_pointer_index];
 }
 
 void CircularArrayCopyPointerManager::reportPrediction(std::wstring_view pattern, bool hit) {

@@ -124,7 +124,7 @@ public:
 class SimpleCopyPointerManager : public CopyPointerManager {
 
 protected:
-    std::map<std::wstring_view, SimplePointerInfo> pointer_map;
+    std::unordered_map<std::wstring_view, SimplePointerInfo> pointer_map;
     int hits = 0;
     int misses = 0;
 
@@ -141,7 +141,7 @@ public:
 
 class CircularArrayCopyPointerManager : public CopyPointerManager {
 
-    std::map<std::wstring_view, CircularArrayPointerInfo> pointer_map;
+    std::unordered_map<std::wstring_view, CircularArrayPointerInfo> pointer_map;
     int hits = 0;
     int misses = 0;
     int array_size;
