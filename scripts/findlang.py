@@ -1,48 +1,88 @@
-import subprocess
+import os
 import argparse
-from os import listdir, getcwd
-from os.path import join
-from typing import List
+import asyncio
+from typing import List, Dict
 
 
-def print_progress(progress: float, message: str):
-    print(f'[{progress:.2%}] {message:100}', end='\r')
-
-
-def main(target_path: str, lang_args: List[str], quit_at_error: bool=False):
-
-    lang_path = join('bin', 'lang')
+async def calculate_total_information_multiprocess(target_path: str, lang_args: List[str], references: List[str], references_folder: str, max_parallel_processes: int = 1, quit_at_error: bool = False) -> Dict[str, float]:
+    lang_path = os.path.join('bin', 'lang')
     print(f'Using copy model in \'{lang_path}\'')
 
-    references_folder_path = join('example', 'reference')
+    lang_sub_processes = []
+    references_remaining = list(references)
+    n_references_to_calculate = len(references)
+    progress = 0
+    def print_progress(message: str):
+        print(f'[{progress / n_references_to_calculate:.2%}] {message:100}', end='\r')
 
-    print_progress(0, 'Starting to analyze references...')
-    reference_names = [reference_name for reference_name in listdir(references_folder_path) if reference_name != '.empty']
-    total_references = len(reference_names)
-    entropies = {reference_name:None for reference_name in reference_names}
-    
-    for progress, reference_name in enumerate(reference_names):
-        reference_path = join(references_folder_path, reference_name)
+    async def include_reference_name(coro, reference: str):
+        res = await coro
+        return res, reference
+
+    async def launch_subprocess_lang(process_task_registry: List[asyncio.Task]):
+        reference = references_remaining.pop()
+        reference_path = os.path.join(references_folder, reference)
+
+        process = await asyncio.create_subprocess_exec(lang_path, *lang_args, '-v', 'o', reference_path, target_path, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        process_task_registry.append(
+            asyncio.create_task(
+                include_reference_name(
+                    process.communicate(), reference)))
         
-        print_progress(progress / total_references, f'Running reference {reference_name}...')
-        completed_process = subprocess.run([lang_path, *lang_args, '-v', 'o', reference_path, target_path], capture_output=True)
-        print_progress((progress + 1) / total_references, f'Entropy for reference {reference_name} calculated.')
+        print_progress(f'Launched subprocess running reference {reference}...')
 
-        if completed_process.stderr:
-            print('\n')
-            print(f'WARNING: possible error occurred during execution of the process! Outputting the captured stderr:')
-            print('\033[0;31m', completed_process.stderr.decode(), '\033[0m', sep='')
-            if quit_at_error:
-                print('Quitting due to possible error.')
-                exit(1)
+    informations = {reference:None for reference in references}
 
-        entropies[reference_name] = float(completed_process.stdout)
+    # Launch the first max_process processes, to kickstart the next loop
+    print_progress('Starting to analyze references...')
+    for _ in range(max_parallel_processes):
+        if len(references_remaining) > 0:
+            await launch_subprocess_lang(lang_sub_processes)
+    
+    failed_by_error = False
+    while len(lang_sub_processes) > 0:
+        next_subprocesses = []
+        for process in asyncio.as_completed(lang_sub_processes):
+            (stdout, stderr), reference = await process
 
-    print_progress(1, 'Finished processing.')
-    print()
+            if failed_by_error:
+                continue
 
-    detected_language, detected_language_entropy = min(entropies.items(), key=lambda t: t[1])
-    print(f'Detected language of reference \'{detected_language}\' with entropy of {detected_language_entropy} bits.')
+            if stderr:
+                print('\n')
+                print(f'WARNING: possible error occurred during execution of the process! Outputting the captured stderr:')
+                print('\033[0;31m', stderr.decode(), '\033[0m', sep='')
+                if quit_at_error:
+                    print('Quitting due to possible error.')
+                    failed_by_error = True
+
+            informations[reference] = float(stdout)
+
+            progress += 1
+            print_progress(f'Information total for reference \'{reference}\' calculated.')
+
+            if len(references_remaining) > 0:
+                await launch_subprocess_lang(next_subprocesses)
+        
+        lang_sub_processes = next_subprocesses
+
+    return informations
+
+
+def main(
+    target_path: str,
+    lang_args: List[str],
+    references_folder: str,
+    n_processes: int = 1,
+    quit_at_error: bool = False,
+):
+
+    references = [reference for reference in os.listdir(references_folder) if reference != '.empty']
+    
+    informations = asyncio.run(calculate_total_information_multiprocess(target_path, lang_args, references, references_folder, n_processes, quit_at_error))
+
+    detected_language, detected_language_information = min(informations.items(), key=lambda t: t[1])
+    print(f'Detected language of reference \'{detected_language}\', compressing the target down to {detected_language_information} bits.')
 
 
 if __name__ == '__main__':
@@ -58,9 +98,11 @@ In order to pass the list of arguments 'land_args', put those arguments at the e
 
 Example: findLang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, help='path to the target text whose language will be estimated')
+    parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
+    parser.add_argument('-p', '--processes', type=int, default=1, help='maximum number of language analysis processes to run in parallel' + default_str)
     parser.add_argument('-q', '--quit-at-error', action='store_true', help='whether the script should quit as soon as an error from \'lang\' is suspected' + default_str)
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 
     args = parser.parse_args()
 
-    main(args.target, args.lang_args, args.quit_at_error)
+    main(args.target, args.lang_args, args.references_folder, args.processes, args.quit_at_error)

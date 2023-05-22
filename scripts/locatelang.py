@@ -129,7 +129,6 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
     def print_progress(message: str):
         print(f'[{progress / n_references_to_calculate:.2%}] {message:100}', end='\r')
 
-    print_progress('Starting to analyze non-cached references...')
     async def launch_subprocess_lang(process_task_registry: List[asyncio.Task]):
         reference = references_to_calculate_remaining.pop()
         reference_path = os.path.join(references_folder, reference)
@@ -140,6 +139,7 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
         print_progress(f'Launched subprocess running reference {reference}...')
 
     # Launch the first max_process processes, to kickstart the next loop
+    print_progress('Starting to analyze non-cached references...')
     for _ in range(max_parallel_processes):
         if len(references_to_calculate_remaining) > 0:
             await launch_subprocess_lang(lang_sub_processes)
@@ -172,7 +172,7 @@ def main(
     plot: bool = False
 ):
 
-    references = set(os.listdir(references_folder))
+    references = set(reference for reference in os.listdir(references_folder) if reference != '.empty')
     target_identifier, target_cache_path = setup_target_bins_cache(target_path, bins_folder)
 
     # If the information streams haven't been calculated yet, do so now
@@ -302,6 +302,7 @@ Should run at the root of the project.
 In order to pass the list of arguments 'land_args', put those arguments at the end with '--' before specifying them, in order to not process '-X' as arguments to this script.
 
 Example: findLang -t <TARGET> -- -r n''')
+    # TODO: add quit_at_error?
     parser.add_argument('-t', '--target', required=True, type=str, help='target file of which to identify language segments')
     parser.add_argument('-m', '--minimum-threshold', type=float, default=2, help='threshold of bits only below which is a portion of compressed text to be considered of a reference language' + default_str)
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
