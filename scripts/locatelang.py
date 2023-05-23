@@ -73,7 +73,7 @@ def spans_of_minimum_values(data: npt.ArrayLike, minimum_threshold: float, stati
     minimum_references = np.argmin(data, axis=0)
     
     minimum_2_references = np.sort(data, axis=0)[:2, :]
-    minimums_to_consider = np.logical_and(((minimum_2_references[0, :] / minimum_2_references[1, :]) < minimum_threshold ), minimum_2_references[1, :] < static_threshold)
+    minimums_to_consider = np.logical_and(((minimum_2_references[0, :] / minimum_2_references[1, :]) < minimum_threshold ), minimum_2_references[0, :] < static_threshold)
 
     minimum_references[~minimums_to_consider] = -1                                      # -1 -1 -1  9  9  9  9 -1 -1 -1 -1 -1  7  7 -1 -1   base
 
@@ -100,7 +100,7 @@ def setup_target_bins_cache(target_path: str, bins_folder: str, lang_args: List[
     target_cache_path = os.path.join(bins_folder, target_identifier)
     target_cache_info_path = os.path.join(target_cache_path, '.info')
     
-    lang_parser = argparse.ArgumentParser(exit_on_error=False)
+    lang_parser = argparse.ArgumentParser()
     lang_parser.add_argument('-k', type=int)
     lang_parser.add_argument('-a', type=float)
     lang_parser.add_argument('-p', type=str)
