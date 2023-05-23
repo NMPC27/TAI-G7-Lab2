@@ -141,10 +141,11 @@ def setup_target_bins_cache(target_path: str, bins_folder: str, lang_args: List[
         
         if non_matching_model_parameters:
             print(f'Warning: the cached entries for target {target_identifier} were calculated using different model parameters:')
-            print(f"\t{'cached':<10}\t{'requested':<10}")
+            table_line_fmt = '{}\t{:<10}\t{:<10}'
+            print(table_line_fmt.format('', 'cached', 'requested'))
             default_val_str = lambda v: '<default>' if v is None else v
             for key, (cached, requested) in non_matching_model_parameters.items():
-                print(f"{key}\t{default_val_str(cached):<10}\t{default_val_str(requested):<10}")
+                print(table_line_fmt.format(key, default_val_str(cached), default_val_str(requested)))
             answer = input('Do you want to recalculate and overwrite the cached entries? [y/N]: ')
 
             if answer.lower() != 'y':
@@ -163,6 +164,8 @@ AVAILABLE_COLORS = [color for color in ColorCode if color != ColorCode.END]
 
 def print_labeled_target_terminal(minimum_references: npt.ArrayLike, minimum_references_locations: npt.ArrayLike, target_path: str, data_to_filename: Dict[str, str]):
     
+    print('\nLabeled output:')
+
     all_references = np.unique(minimum_references)
     if len(all_references) > len(AVAILABLE_COLORS):
         print(f'Warning: the number of references is greater than the number of avaiblable output colors! (max. {len(AVAILABLE_COLORS)})')
@@ -179,6 +182,7 @@ def print_labeled_target_terminal(minimum_references: npt.ArrayLike, minimum_ref
         print(color_mapping[reference].foreground() + target_str[reference_location:reference_location_next] + ColorCode.END.value, end='')
     print(color_mapping[minimum_references[-1]].foreground() + target_str[minimum_references_locations[-1]:] + ColorCode.END.value)
 
+    print('Legend:')
     for reference, color in color_mapping.items():
         print(color.background() + data_to_filename[str(reference)] + ColorCode.END.value, end=' ')
 
@@ -314,23 +318,29 @@ def main(
 
     print(' done!')
 
-    # Threshold study
     if plot:
+        # Threshold study
         plt.figure()
         overall_mean = np.mean(information_streams, axis=0)
         mean_without_minimum_reference = (np.sum(information_streams, axis=0) - np.min(information_streams, axis=0)) / (information_streams.shape[0] - 1)
-        plt.plot(overall_mean, label='overall')
-        plt.plot(mean_without_minimum_reference, label='without minimum')
+        plt.plot(overall_mean, label='overall mean')
+        plt.plot(mean_without_minimum_reference, label='mean without minimum')
         plt.plot(np.min(information_streams, axis=0), label='minimum')
         plt.plot(np.sort(information_streams, axis=0)[1, :], label='second minimum')
+        plt.title('Information of each symbol in the target after training on each reference')
+        plt.xlabel('Target position')
+        plt.ylabel('Information (bits)')
         plt.legend()
 
-    if plot:
-        plt.figure(figsize=(10, 10))
+        # Information over time
+        plt.figure()
         for i in range(len(information_bins)):
             plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
         plt.plot([minimum_threshold] * information_streams.shape[1])
         plt.legend()
+        plt.title('Information of each symbol in the target after training on each reference')
+        plt.xlabel('Target position')
+        plt.ylabel('Information (bits)')
         plt.show()
 
     print('Detecting language spans with method 1...', end='', flush=True)
@@ -338,8 +348,8 @@ def main(
     print(' done!')
 
     print('Method 1 results:')
-    print(minimum_references_locations)
-    print([data_to_filename[str(reference_i)] for reference_i in minimum_references])
+    print('sections=', minimum_references_locations, sep='')
+    print('languages=', [data_to_filename[str(reference_i)] for reference_i in minimum_references], sep='')
 
     # print('Detecting language spans with method 2...', end='', flush=True)
     # # Generate contiguous intervals
