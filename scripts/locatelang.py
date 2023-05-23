@@ -47,7 +47,7 @@ def low_pass_filter(signal: npt.ArrayLike, frequency_dropoff: float = 1e2) -> np
 
 
 # TODO: update documentation
-def spans_of_minimum_values(data: npt.ArrayLike, minimum_threshold: float, fill_unknown: bool = False, use_static_threshold: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+def spans_of_minimum_values(data: npt.ArrayLike, minimum_threshold: float, static_threshold: float, fill_unknown: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """From a matrix representing N parallel streams of the same size, identify which of the streams provided the minimum value and at what sections.
     
     Only minimum values under a given threshold are considered.
@@ -71,11 +71,9 @@ def spans_of_minimum_values(data: npt.ArrayLike, minimum_threshold: float, fill_
     """
 
     minimum_references = np.argmin(data, axis=0)
-    if use_static_threshold:
-        minimums_to_consider = np.min(data, axis=0) < minimum_threshold
-    else:
-        minimum_2_references = np.sort(data, axis=0)[:2, :]
-        minimums_to_consider = (minimum_2_references[0, :] / minimum_2_references[1, :]) < minimum_threshold
+    
+    minimum_2_references = np.sort(data, axis=0)[:2, :]
+    minimums_to_consider = np.logical_and(((minimum_2_references[0, :] / minimum_2_references[1, :]) < minimum_threshold ), minimum_2_references[1, :] < static_threshold)
 
     minimum_references[~minimums_to_consider] = -1                                      # -1 -1 -1  9  9  9  9 -1 -1 -1 -1 -1  7  7 -1 -1   base
 
@@ -255,12 +253,12 @@ def main(
     n_processes: int = 1,
     print_labeled_target: bool = False,
     fill_unknown: bool = False,
-    use_static_threshold: bool = False,
+    static_threshold: float = None,
     low_pass_filter_dropoff: float = 1e2,
     quit_at_error: bool = False,
     plot: bool = False
 ):
-
+    
     references = set(reference for reference in os.listdir(references_folder) if reference != '.empty')
     target_identifier, target_cache_path, invalid_cache = setup_target_bins_cache(target_path, bins_folder, lang_args)
 
@@ -303,24 +301,23 @@ def main(
         print('.', end='', flush=True)
     
     # Define a threshold using the target alphabet size
-    # def get_alphabet_size(filename):
-    #     with open(filename, 'r') as file:
-    #         content = file.read()
+    def get_alphabet_size(filename):
+        with open(filename, 'r') as file:
+            content = file.read()
 
-    #     unique_letters = set(content)
-    #     num_letters = len(unique_letters)
+        unique_letters = set(content)
+        num_letters = len(unique_letters)
 
-    #     return num_letters
+        return num_letters
 
-    # target_alphabet_size = get_alphabet_size(target_path)
-    # minimum_threshold_test = np.log2(target_alphabet_size) / 2
-
-    # print(target_alphabet_size)
+    if static_threshold is None:
+        target_alphabet_size = get_alphabet_size(target_path)
+        static_threshold = np.log2(target_alphabet_size) / 1.2
 
     print(' done!')
 
     print('Detecting language spans with method 1...', end='', flush=True)
-    minimum_references_locations, minimum_references = spans_of_minimum_values(information_streams, minimum_threshold, fill_unknown, use_static_threshold)
+    minimum_references_locations, minimum_references = spans_of_minimum_values(information_streams, minimum_threshold, static_threshold, fill_unknown)
     print(' done!')
 
     print('Method 1 results:')
@@ -377,7 +374,7 @@ def main(
         plt.figure()
         for i in range(len(information_bins)):
             plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
-        plt.plot([minimum_threshold] * information_streams.shape[1])
+        plt.plot([static_threshold] * information_streams.shape[1])
         plt.legend()
         plt.title('Information of each symbol in the target after training on each reference')
         plt.xlabel('Target position')
@@ -399,14 +396,14 @@ In order to pass the list of arguments 'land_args', put those arguments at the e
 
 Example: findLang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, type=str, help='target file of which to identify language segments')
-    parser.add_argument('-m', '--minimum-threshold', type=float, default=2, help='threshold of bits only below which is a portion of compressed text to be considered of a reference language' + default_str)
+    parser.add_argument('-m', '--minimum-threshold', type=float, default=1, help='threshold of bits only below which is a portion of compressed text to be considered of a reference language' + default_str)
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
     parser.add_argument('-p', '--processes', type=int, default=1, help='maximum number of language analysis processes to run in parallel' + default_str)
     parser.add_argument('-f', '--frequency-filter', type=float, default=1e2, help='how much to downscale high frequencies of information')
     parser.add_argument('--bins-folder', type=str, default=os.path.join('scripts', 'input'), help='location on which the compressed information results of the target will be cached to' + default_str)
     parser.add_argument('--labeled-output', action='store_true', help='whether to print the target text labeled with colors for each detected language')
     parser.add_argument('--fill-unknown', action='store_true', help='whether to identify unknown language segments as a known language using forward filling (and backward filling for the first section if unknown)')
-    parser.add_argument('--static-threshold', action='store_true', help='whether to use a static, global threshold of bits for all languages, only below which are reference languages considered')
+    parser.add_argument('--static-threshold', type=float, help='a static, global threshold of bits for all languages, only below which are reference languages considered (default: None)')
     parser.add_argument('--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
     parser.add_argument('--plot', action='store_true', help='whether to plot demonstrational graphs')
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
@@ -422,7 +419,7 @@ Example: findLang -t <TARGET> -- -r n''')
         n_processes=args.processes,
         print_labeled_target=args.labeled_output,
         fill_unknown=args.fill_unknown,
-        use_static_threshold=args.static_threshold,
+        static_threshold=args.static_threshold,
         low_pass_filter_dropoff=args.frequency_filter,
         quit_at_error=not args.ignore_errors,
         plot=args.plot,
