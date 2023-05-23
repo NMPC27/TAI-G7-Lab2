@@ -4,11 +4,35 @@ import asyncio
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
+from dataclasses import dataclass
 from color_code import ColorCode
 
 
 CACHED_INFORMATION_BIN_FORMAT = 'lang_{reference}.bin'
+
+
+@dataclass
+class TargetCacheInfo:
+    """Information regarding the cached information bins, such as target file path and 'lang' arguments
+    Useful to know whether the cached bins can be used or not for the model arguments that were passed to the script."""
+
+    target: str
+    model_args: Dict[str, Any]
+
+    def serialize(self) -> str:
+        return self.target + '\n' + \
+            '\n'.join(f"{k}\t{v}" for k, v in self.model_args.items())
+
+    @classmethod
+    def deserialize(cls, s: str) -> 'TargetCacheInfo':
+        lines = s.splitlines(keepends=False)
+        target = lines[0]
+
+        split_tabs = lambda s: s.split('\t')
+        model_args = dict(map(split_tabs, lines[1:]))
+        
+        return TargetCacheInfo(target, model_args)
 
 
 def low_pass_filter(signal: npt.ArrayLike, frequency_dropoff: float = 1e2) -> np.ndarray:
@@ -73,24 +97,66 @@ def spans_of_minimum_values(data: npt.ArrayLike, minimum_threshold: float, fill_
     return sections, minimum_references[sections]
 
 
-def setup_target_bins_cache(target_path: str, bins_folder: str) -> Tuple[str, str]:
+def setup_target_bins_cache(target_path: str, bins_folder: str, lang_args: List[str]) -> Tuple[str, str]:
     target_identifier, _ = os.path.splitext(os.path.basename(target_path))
     target_cache_path = os.path.join(bins_folder, target_identifier)
     target_cache_info_path = os.path.join(target_cache_path, '.info')
     
+    lang_parser = argparse.ArgumentParser(exit_on_error=False)
+    lang_parser.add_argument('-k', type=int)
+    lang_parser.add_argument('-a', type=float)
+    lang_parser.add_argument('-p', type=str)
+    lang_parser.add_argument('-r', type=str)
+    lang_parser.add_argument('-t', type=str)
+    lang_args_dict = vars(lang_parser.parse_args(lang_args))
+
+    # Target and model info that the current script execution demands
+    requested_target_info = TargetCacheInfo(target_path, {k:v for k, v in lang_args_dict.items() if v is not None})
+
+    invalid_cache = False
+
     # If the cache is not setup, then create the cache folder and info
     if not os.path.isdir(target_cache_path):
         os.makedirs(target_cache_path)
         with open(target_cache_info_path, 'wt') as f:
-            f.write(target_path)
+            f.write(requested_target_info.serialize())
     
-    # If the cache is already setup, check if it still refers to the same target
+    # If the cache is already setup, check if it still refers to the same target and was calculated with the same model parameters
     else:
         with open(target_cache_info_path, 'rt') as f:
-            if f.readline() != target_path:
-                raise ValueError(f'the target file has the same name as a cached entry, but they are from different paths (path already in cache: {target_cache_info_path})!')
+            cached_target_info = TargetCacheInfo.deserialize(f.read())
+        
+        if cached_target_info.target != target_path:
+            raise ValueError(f'the target file has the same name as a cached entry, but they are from different paths (path already in cache: {target_cache_info_path})!')
+
+        specified_keys = cached_target_info.model_args.keys() | requested_target_info.model_args.keys()
+        non_matching_model_parameters = {}
+        for key in specified_keys:
+            if key not in cached_target_info.model_args:
+                non_matching_model_parameters[key] = (None, requested_target_info.model_args[key])
+            elif key not in requested_target_info.model_args:
+                non_matching_model_parameters[key] = (cached_target_info.model_args[key], None)
+            elif cached_target_info[key] != requested_target_info[key]:
+                non_matching_model_parameters[key] = (cached_target_info.model_args[key], requested_target_info)
+        
+        if non_matching_model_parameters:
+            print(f'Warning: the cached entries for target {target_identifier} were calculated using different model parameters:')
+            print(f"\t{'cached':<10}\t{'requested':<10}")
+            default_val_str = lambda v: '<default>' if v is None else v
+            for key, (cached, requested) in non_matching_model_parameters.items():
+                print(f"{key}\t{default_val_str(cached):<10}\t{default_val_str(requested):<10}")
+            answer = input('Do you want to recalculate and overwrite the cached entries? [y/N]: ')
+
+            if answer.lower() != 'y':
+                print('Overwrite not allowed, quitting...')
+                exit(0)
+
+            else:
+                with open(target_cache_info_path, 'wt') as f:
+                    f.write(requested_target_info.serialize())
+                invalid_cache = True
     
-    return target_identifier, target_cache_path
+    return target_identifier, target_cache_path, invalid_cache
 
 
 AVAILABLE_COLORS = [color for color in ColorCode if color != ColorCode.END]
@@ -134,8 +200,9 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
         reference_path = os.path.join(references_folder, reference)
         reference_cached_result_path = os.path.join(cache_folder, CACHED_INFORMATION_BIN_FORMAT.format(reference=reference))
 
-        process = await asyncio.create_subprocess_exec(lang_path, *lang_args, '-v', 'm:' + reference_cached_result_path, reference_path, target_path, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE)
-        process_task_registry.append(asyncio.create_task(process.communicate()))
+        process = await asyncio.create_subprocess_exec(lang_path, *lang_args, '-v', 'm:' + reference_cached_result_path, reference_path, target_path,
+                                                       stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE, stdin=asyncio.subprocess.PIPE)
+        process_task_registry.append(asyncio.create_task(process.communicate(input=b'y')))     # send the 'y' to standard input to accept overwriting the machine output file if needed
         print_progress(f'Launched subprocess running reference {reference}...')
 
     # Launch the first max_process processes, to kickstart the next loop
@@ -190,12 +257,12 @@ def main(
 ):
 
     references = set(reference for reference in os.listdir(references_folder) if reference != '.empty')
-    target_identifier, target_cache_path = setup_target_bins_cache(target_path, bins_folder)
+    target_identifier, target_cache_path, invalid_cache = setup_target_bins_cache(target_path, bins_folder, lang_args)
 
     # If the information streams haven't been calculated yet, do so now
     # Assume the CACHED_INFORMATION_BIN_FORMAT has a 5-character prefix and 4-character suffix
     cached_references = {cached_bin[5:-4] for cached_bin in os.listdir(target_cache_path) if cached_bin != '.info'}
-    not_cached_references = references - cached_references
+    not_cached_references = references if invalid_cache else (references - cached_references)
     n_not_cached_references = len(not_cached_references)
     if n_not_cached_references > 0:
         asyncio.run(calculate_references_multiprocess(
@@ -320,7 +387,6 @@ Should run at the root of the project.
 In order to pass the list of arguments 'land_args', put those arguments at the end with '--' before specifying them, in order to not process '-X' as arguments to this script.
 
 Example: findLang -t <TARGET> -- -r n''')
-    # TODO: add quit_at_error?
     parser.add_argument('-t', '--target', required=True, type=str, help='target file of which to identify language segments')
     parser.add_argument('-m', '--minimum-threshold', type=float, default=2, help='threshold of bits only below which is a portion of compressed text to be considered of a reference language' + default_str)
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
@@ -330,7 +396,7 @@ Example: findLang -t <TARGET> -- -r n''')
     parser.add_argument('--labeled-output', action='store_true', help='whether to print the target text labeled with colors for each detected language')
     parser.add_argument('--fill-unknown', action='store_true', help='whether to identify unknown language segments as a known language using forward filling (and backward filling for the first section if unknown)')
     parser.add_argument('--static-threshold', action='store_true', help='whether to use a static, global threshold of bits for all languages, only below which are reference languages considered')
-    parser.add_argument('-e', '--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
+    parser.add_argument('--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
     parser.add_argument('--plot', action='store_true', help='whether to plot demonstrational graphs')
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 

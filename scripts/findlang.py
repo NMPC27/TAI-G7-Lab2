@@ -104,7 +104,7 @@ Example: findLang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, help='path to the target text whose language will be estimated')
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
     parser.add_argument('-p', '--processes', type=int, default=1, help='maximum number of language analysis processes to run in parallel' + default_str)
-    parser.add_argument('-e', '--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
+    parser.add_argument('--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 
     args = parser.parse_args()
