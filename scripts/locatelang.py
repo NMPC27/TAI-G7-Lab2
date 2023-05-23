@@ -117,7 +117,7 @@ def print_labeled_target_terminal(minimum_references: npt.ArrayLike, minimum_ref
         print(color.background() + data_to_filename[str(reference)] + ColorCode.END.value, end=' ')
 
 
-async def calculate_references_multiprocess(target_path: str, lang_args: List[str], references_to_calculate: List[str], references_folder: str, cache_folder: str, max_parallel_processes: int = 1):
+async def calculate_references_multiprocess(target_path: str, lang_args: List[str], references_to_calculate: List[str], references_folder: str, cache_folder: str, max_parallel_processes: int = 1, quit_at_error: bool = False):
     lang_path = os.path.join('bin', 'lang')
     print(f'Information bins are missing, will calculate using copy model in \'{lang_path}\'')
 
@@ -134,8 +134,8 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
         reference_path = os.path.join(references_folder, reference)
         reference_cached_result_path = os.path.join(cache_folder, CACHED_INFORMATION_BIN_FORMAT.format(reference=reference))
 
-        process = await asyncio.create_subprocess_exec(lang_path, *lang_args, '-v', 'm:' + reference_cached_result_path, reference_path, target_path, stdout=asyncio.subprocess.DEVNULL)
-        process_task_registry.append(asyncio.create_task(process.wait()))
+        process = await asyncio.create_subprocess_exec(lang_path, *lang_args, '-v', 'm:' + reference_cached_result_path, reference_path, target_path, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE)
+        process_task_registry.append(asyncio.create_task(process.communicate()))
         print_progress(f'Launched subprocess running reference {reference}...')
 
     # Launch the first max_process processes, to kickstart the next loop
@@ -143,12 +143,24 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
     for _ in range(max_parallel_processes):
         if len(references_to_calculate_remaining) > 0:
             await launch_subprocess_lang(lang_sub_processes)
-        
+    
+    failed_by_error = False
     while len(lang_sub_processes) > 0:
         next_subprocesses = []
         for process in asyncio.as_completed(lang_sub_processes):
-            await process
+            _, stderr = await process
             
+            if failed_by_error:
+                continue
+
+            if stderr:
+                print('\n')
+                print(f'WARNING: possible error occurred during execution of the process! Outputting the captured stderr:')
+                print('\033[0;31m', stderr.decode(), '\033[0m', sep='')
+                if quit_at_error:
+                    failed_by_error = True
+                continue
+
             progress += 1
             print_progress('Information bin for a reference calculated and cached.')
 
@@ -156,6 +168,10 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
                 await launch_subprocess_lang(next_subprocesses)
         
         lang_sub_processes = next_subprocesses
+    
+    if failed_by_error:
+        print('Quitting due to possible error.')
+        raise RuntimeError('at least one execution of \'lang\' was unsusccessful')
 
 
 def main(
@@ -169,6 +185,7 @@ def main(
     fill_unknown: bool = False,
     use_static_threshold: bool = False,
     low_pass_filter_dropoff: float = 1e2,
+    quit_at_error: bool = False,
     plot: bool = False
 ):
 
@@ -188,6 +205,7 @@ def main(
             references_folder=references_folder,
             cache_folder=target_cache_path,
             max_parallel_processes=n_processes,
+            quit_at_error=quit_at_error,
         ))
 
     else:
@@ -312,6 +330,7 @@ Example: findLang -t <TARGET> -- -r n''')
     parser.add_argument('--labeled-output', action='store_true', help='whether to print the target text labeled with colors for each detected language')
     parser.add_argument('--fill-unknown', action='store_true', help='whether to identify unknown language segments as a known language using forward filling (and backward filling for the first section if unknown)')
     parser.add_argument('--static-threshold', action='store_true', help='whether to use a static, global threshold of bits for all languages, only below which are reference languages considered')
+    parser.add_argument('-e', '--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
     parser.add_argument('--plot', action='store_true', help='whether to plot demonstrational graphs')
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 
@@ -328,5 +347,6 @@ Example: findLang -t <TARGET> -- -r n''')
         fill_unknown=args.fill_unknown,
         use_static_threshold=args.static_threshold,
         low_pass_filter_dropoff=args.frequency_filter,
-        plot=args.plot
+        quit_at_error=not args.ignore_errors,
+        plot=args.plot,
     )

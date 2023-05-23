@@ -4,7 +4,7 @@ import asyncio
 from typing import List, Dict
 
 
-async def calculate_total_information_multiprocess(target_path: str, lang_args: List[str], references: List[str], references_folder: str, max_parallel_processes: int = 1, quit_at_error: bool = False) -> Dict[str, float]:
+async def calculate_total_information_multiprocess(target_path: str, lang_args: List[str], references: List[str], references_folder: str, max_parallel_processes: int = 1, quit_at_error: bool = True) -> Dict[str, float]:
     lang_path = os.path.join('bin', 'lang')
     print(f'Using copy model in \'{lang_path}\'')
 
@@ -53,8 +53,8 @@ async def calculate_total_information_multiprocess(target_path: str, lang_args: 
                 print(f'WARNING: possible error occurred during execution of the process! Outputting the captured stderr:')
                 print('\033[0;31m', stderr.decode(), '\033[0m', sep='')
                 if quit_at_error:
-                    print('Quitting due to possible error.')
                     failed_by_error = True
+                continue
 
             informations[reference] = float(stdout)
 
@@ -66,6 +66,10 @@ async def calculate_total_information_multiprocess(target_path: str, lang_args: 
         
         lang_sub_processes = next_subprocesses
 
+    if failed_by_error:
+        print('Quitting due to possible error.')
+        raise RuntimeError('at least one execution of \'lang\' was unsusccessful')
+
     return informations
 
 
@@ -74,7 +78,7 @@ def main(
     lang_args: List[str],
     references_folder: str,
     n_processes: int = 1,
-    quit_at_error: bool = False,
+    quit_at_error: bool = True,
 ):
 
     references = [reference for reference in os.listdir(references_folder) if reference != '.empty']
@@ -100,9 +104,15 @@ Example: findLang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, help='path to the target text whose language will be estimated')
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
     parser.add_argument('-p', '--processes', type=int, default=1, help='maximum number of language analysis processes to run in parallel' + default_str)
-    parser.add_argument('-q', '--quit-at-error', action='store_true', help='whether the script should quit as soon as an error from \'lang\' is suspected' + default_str)
+    parser.add_argument('-e', '--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 
     args = parser.parse_args()
 
-    main(args.target, args.lang_args, args.references_folder, args.processes, args.quit_at_error)
+    main(
+        target_path=args.target,
+        lang_args=args.lang_args,
+        references_folder=args.references_folder,
+        n_processes=args.processes,
+        quit_at_error=not args.ignore_errors
+    )
