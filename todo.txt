@@ -1,4 +1,3 @@
-- CircularArrayCopyPointerManager goes out of bounds when evaluating en+pt.utf8 with EN reference! (at ~70% progress)
 - fix finite context model memory usage and performance
 - check why using the uniform distribution produces an information valley on *all* references
 - investigate different threshold strategies for `locatelang` (use 2 thresholds at the same time)
