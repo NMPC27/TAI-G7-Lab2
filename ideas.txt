@@ -2,9 +2,7 @@
 - use `const` when applicable
 
 - TODO:
-    - profile the `lang` program and investigate places where optimizations can be made
     - finish the finite context model (freeze the model after training on the reference, but still consider the target alphabet!)
         - have to make sure probability distributions are handled properly (only consider characters from the target alphabet, but use information trained on the reference)
     - investigate different threshold strategies for `locatelang`
-    - add multiprocessing to `findlang`
     - investigate uniform vs frequency distribution for `locatelang`. The idea is that greek and bulgarian will not have such an information discrepancy compared to the other languages since the default distribution for all reference languages *should be the same*!
