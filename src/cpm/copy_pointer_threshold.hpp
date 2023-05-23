@@ -1,6 +1,5 @@
 #include <vector>
 #include <string>
-#include <map>
 
 /**
  *  \file copy_pointer_threshold.hpp (interface file)

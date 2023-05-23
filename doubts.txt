@@ -12,5 +12,3 @@
 
 - Finite-context model is built while processing the file, or completely in a first pass?
     - ???
-
-- CircularArrayCopyPointerManager goes out of bounds when evaluating en+pt.utf8 with EN reference! (at ~70% progress)

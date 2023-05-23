@@ -11,7 +11,7 @@ bool SimpleCopyPointerManager::registerCopyPointer(std::wstring_view pattern, si
             .copy_pointer_index = 0,
         };
 
-        pointer_map[pattern] = pattern_info;
+        pointer_map.insert({pattern, pattern_info});
         
         return false;
     }
@@ -54,7 +54,7 @@ bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring_view patt
             .insertion_point = 1,
         };
 
-        pointer_map[pattern] = pattern_info;
+        pointer_map.insert({pattern, pattern_info});
         
         return false;
     }

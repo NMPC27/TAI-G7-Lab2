@@ -137,7 +137,7 @@ void CopyModel::firstPassOverTarget(std::string target_name) {
 
     wchar_t c = file.get();
 
-    std::map<wchar_t, int> target_alphabet_counts;
+    std::unordered_map<wchar_t, int> target_alphabet_counts;
 
     while (!file.eof()) {
         // TODO: PERFORMANCE: read in chunks instead of character by character?
@@ -192,7 +192,7 @@ double CopyModel::calculateProbability(int hits, int misses) {
     return (hits + alpha) / (hits + misses + 2 * alpha);
 }
 
-void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute, std::map<wchar_t, double> distribution) {
+void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute, std::unordered_map<wchar_t, double> distribution) {
     double base_remainder_total = 0.0;
     for (auto pair : distribution)
         if (pair.first != exception)
