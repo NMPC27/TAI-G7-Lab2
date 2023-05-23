@@ -149,7 +149,8 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring_view pa
     for (i = 0; i < pointer_map.at(pattern).pointers.size(); i++)
         if (pointer_map.at(pattern).pointers[i] == pointer_candidate)
             break;
-    pointer_map.at(pattern).copy_pointer_index = i;
+    if (i < pointer_map.at(pattern).pointers.size())
+        pointer_map.at(pattern).copy_pointer_index = i;
 
 }
 
@@ -215,6 +216,7 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view patte
     for (i = 0; i < pointer_map.at(pattern).pointers.size(); i++)
         if (pointer_map.at(pattern).pointers[i] == pointer_candidate)
             break;
-    pointer_map.at(pattern).copy_pointer_index = i;
+    if (i < pointer_map.at(pattern).pointers.size())
+        pointer_map.at(pattern).copy_pointer_index = i;
 
 }

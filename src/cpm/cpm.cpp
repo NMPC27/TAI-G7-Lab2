@@ -113,7 +113,7 @@ void CopyModel::firstPassOverReference(std::string reference_name) {
         reference_file.push_back(c);
 
         alphabet_counts.insert({c, 0});
-        alphabet_counts[c]++;
+        alphabet_counts.at(c)++;
 
         c = file.get();
     }
@@ -144,7 +144,7 @@ void CopyModel::firstPassOverTarget(std::string target_name) {
         target_file.push_back(c);
 
         target_alphabet_counts.insert({c, 0});
-        target_alphabet_counts[c]++;
+        target_alphabet_counts.at(c)++;
 
         c = file.get();
     }
@@ -204,7 +204,7 @@ void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_
 }
 
 double CopyModel::progress() {
-    return (double) current_position / target_file.size();
+    return (double) (current_position + 1) / target_file.size();
 }
 
 void CopyModel::guess() {
