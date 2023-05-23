@@ -123,10 +123,6 @@ void CopyModel::firstPassOverReference(std::string reference_name) {
     // Copy the last part of the file to the beginning, to serve as the past (repeat-like wrapping)
     for (int i = 0; i < k; i++)
         reference_file[i] = reference_file[reference_file.size() - k + i];
-
-    base_distribution->setBaseDistribution(alphabet_counts);
-    for (auto pair : alphabet_counts)
-        probability_distribution[pair.first] = 0;
 }
 
 void CopyModel::firstPassOverTarget(std::string target_name) {
@@ -141,12 +137,14 @@ void CopyModel::firstPassOverTarget(std::string target_name) {
 
     wchar_t c = file.get();
 
+    std::map<wchar_t, int> target_alphabet_counts;
+
     while (!file.eof()) {
         // TODO: PERFORMANCE: read in chunks instead of character by character?
         target_file.push_back(c);
 
-        alphabet_counts.insert({c, 0});
-        alphabet_counts[c]++;
+        target_alphabet_counts.insert({c, 0});
+        target_alphabet_counts[c]++;
 
         c = file.get();
     }
@@ -157,7 +155,20 @@ void CopyModel::firstPassOverTarget(std::string target_name) {
     for (int i = 0; i < k; i++)
         target_file[i] = reference_file[reference_file.size() - k + i];
 
-    // TODO: base distribution should be updated with the new alphabet, not completely changed! (finite context distribution trained on the reference file should be preserved)
+    // Remove characters that were in the reference but not in the target
+    for (auto it = alphabet_counts.begin(); it != alphabet_counts.end();) {
+        auto pair = *it;
+        if (target_alphabet_counts.find(pair.first) == target_alphabet_counts.end())
+            it = alphabet_counts.erase(it);
+        else
+            it++;
+    }
+    
+    // Add characters that were in the target but not in the reference
+    for (auto pair : target_alphabet_counts)
+        if (alphabet_counts.find(pair.first) == alphabet_counts.end())
+            alphabet_counts[pair.first] = 1;    // use count at 1 to prevent infinite information
+
     base_distribution->setBaseDistribution(alphabet_counts);
     for (auto pair : alphabet_counts)
         probability_distribution[pair.first] = 0;

@@ -33,7 +33,6 @@ public:
  * This method uses the histogram count to set the base distribution.
  */
     virtual ~BaseDistribution() {};
-    virtual void setParameters(double alpha) {};
     virtual void setBaseDistribution(std::map<wchar_t, int> histogram) = 0;
     virtual void updateWithContext(std::wstring_view context, wchar_t symbol) {};
     virtual std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context) = 0;
@@ -81,6 +80,7 @@ public:
 
 class FiniteContextDistribution : public BaseDistribution {
 
+    // TODO: change to unordered_map?
     std::map<std::wstring_view, std::map<wchar_t, double>> context_table;
     std::vector<wchar_t> alphabet;
     unsigned int k;
