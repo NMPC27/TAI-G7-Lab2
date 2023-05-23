@@ -136,8 +136,8 @@ def setup_target_bins_cache(target_path: str, bins_folder: str, lang_args: List[
                 non_matching_model_parameters[key] = (None, requested_target_info.model_args[key])
             elif key not in requested_target_info.model_args:
                 non_matching_model_parameters[key] = (cached_target_info.model_args[key], None)
-            elif cached_target_info[key] != requested_target_info[key]:
-                non_matching_model_parameters[key] = (cached_target_info.model_args[key], requested_target_info)
+            elif cached_target_info.model_args[key] != requested_target_info.model_args[key]:
+                non_matching_model_parameters[key] = (cached_target_info.model_args[key], requested_target_info.model_args[key])
         
         if non_matching_model_parameters:
             print(f'Warning: the cached entries for target {target_identifier} were calculated using different model parameters:')
@@ -185,6 +185,7 @@ def print_labeled_target_terminal(minimum_references: npt.ArrayLike, minimum_ref
     print('Legend:')
     for reference, color in color_mapping.items():
         print(color.background() + data_to_filename[str(reference)] + ColorCode.END.value, end=' ')
+    print()
 
 
 async def calculate_references_multiprocess(target_path: str, lang_args: List[str], references_to_calculate: List[str], references_folder: str, cache_folder: str, max_parallel_processes: int = 1, quit_at_error: bool = False):
@@ -318,31 +319,6 @@ def main(
 
     print(' done!')
 
-    if plot:
-        # Threshold study
-        plt.figure()
-        overall_mean = np.mean(information_streams, axis=0)
-        mean_without_minimum_reference = (np.sum(information_streams, axis=0) - np.min(information_streams, axis=0)) / (information_streams.shape[0] - 1)
-        plt.plot(overall_mean, label='overall mean')
-        plt.plot(mean_without_minimum_reference, label='mean without minimum')
-        plt.plot(np.min(information_streams, axis=0), label='minimum')
-        plt.plot(np.sort(information_streams, axis=0)[1, :], label='second minimum')
-        plt.title('Information of each symbol in the target after training on each reference')
-        plt.xlabel('Target position')
-        plt.ylabel('Information (bits)')
-        plt.legend()
-
-        # Information over time
-        plt.figure()
-        for i in range(len(information_bins)):
-            plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
-        plt.plot([minimum_threshold] * information_streams.shape[1])
-        plt.legend()
-        plt.title('Information of each symbol in the target after training on each reference')
-        plt.xlabel('Target position')
-        plt.ylabel('Information (bits)')
-        plt.show()
-
     print('Detecting language spans with method 1...', end='', flush=True)
     minimum_references_locations, minimum_references = spans_of_minimum_values(information_streams, minimum_threshold, fill_unknown, use_static_threshold)
     print(' done!')
@@ -382,6 +358,31 @@ def main(
 
     if print_labeled_target:
         print_labeled_target_terminal(minimum_references, minimum_references_locations, target_path, data_to_filename)
+
+    if plot:
+        # Threshold study
+        plt.figure()
+        overall_mean = np.mean(information_streams, axis=0)
+        mean_without_minimum_reference = (np.sum(information_streams, axis=0) - np.min(information_streams, axis=0)) / (information_streams.shape[0] - 1)
+        plt.plot(overall_mean, label='overall mean')
+        plt.plot(mean_without_minimum_reference, label='mean without minimum')
+        plt.plot(np.min(information_streams, axis=0), label='minimum')
+        plt.plot(np.sort(information_streams, axis=0)[1, :], label='second minimum')
+        plt.title('Information of each symbol in the target after training on each reference')
+        plt.xlabel('Target position')
+        plt.ylabel('Information (bits)')
+        plt.legend()
+
+        # Information over time
+        plt.figure()
+        for i in range(len(information_bins)):
+            plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
+        plt.plot([minimum_threshold] * information_streams.shape[1])
+        plt.legend()
+        plt.title('Information of each symbol in the target after training on each reference')
+        plt.xlabel('Target position')
+        plt.ylabel('Information (bits)')
+        plt.show()
 
 
 
