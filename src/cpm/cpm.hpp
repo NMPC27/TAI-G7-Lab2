@@ -1,7 +1,8 @@
 #include <vector>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <cwchar>
+#include <string_view>
 #include "copy_pointer_threshold.hpp"
 #include "copy_pointer_manager.hpp"
 #include "base_distribution.hpp"
@@ -19,12 +20,12 @@
  *      \li predictionSetup
  *      \li predict
  *      \li advance
- *      \li firstPass
+ *      \li firstPassOverReference
  *      \li eof
  *      \li countof
  *      \li guess
  *      \li progress
- *      \li initializeWithMostFrequent
+ *      \li initializeOnReference
  *      \li calculateProbability
  *      \li setRemainderProbabilities
  *      \li surpassedAnyThreshold
@@ -32,6 +33,7 @@
  *  \author Pedro Lima 97860 && Nuno Cunha 98124 && Martinho Tavares 98262
  */
 
+// TODO: put documentation regarding parameters on the parameters themselves
 /**
  * @brief Copy Model main class.
  * 
@@ -80,13 +82,15 @@ class CopyModel {
     CopyPointerManager* pointer_manager;
     BaseDistribution* base_distribution;
 
-    std::vector<wchar_t> mem_file;
-    std::map<wchar_t, int> alphabet_counts;
+    std::vector<wchar_t> target_file;
+    std::vector<wchar_t> reference_file;
+    std::unordered_map<wchar_t, int> alphabet_counts;
     
     size_t current_position = -1;
-    std::wstring current_pattern;
+    std::wstring_view current_pattern;
     size_t copy_position = -1;
-    std::wstring copy_pattern;
+    std::wstring_view copy_pattern;
+    bool predicting = false;
 
 public:
     CopyModel(int k, double alpha, CopyPointerThreshold** pt, int ptn, CopyPointerManager* pm, BaseDistribution* bd) : 
@@ -137,14 +141,18 @@ public:
  * This is used to count the number of times each symbol appears in the file, to calculate the base distribution.
  * 
  */
-    void firstPass(std::string);
+    // TODO: rename this to something more descriptive (what's done in the "first pass"?? there are multiple "first passes"...)
+    void firstPassOverReference(std::string);
+    void firstPassOverTarget(std::string);
+    void updateDistribution();
 /**
  * @brief Verifies if the end of the file has been reached.
  * 
  * @return true 
  * @return false 
  */
-    bool eof();
+    bool eofReference();
+    bool eofTarget();
 /**
  * @brief Returns the number of times a symbol appears in the file.
  * 
@@ -166,15 +174,11 @@ public:
  * @brief Initializes the current_pattern and copy_pattern with a pattern of k size, composed of the most frequent symbol in the file 
  * 
  */
-    void initializeWithMostFrequent();
-/**
- * @brief Append the contents of another file in memory. Doesn't perform any calculations over it.
- * 
- */
-    void appendFuture(std::string);
+    void initializeOnReference();
+    void initializeOnTarget();
 
     // Read-only values. Always overwritten when calling predictNext()
-    std::map<wchar_t, double> probability_distribution;
+    std::unordered_map<wchar_t, double> probability_distribution;
     double hit_probability = 0;
     wchar_t prediction = '\0';
     wchar_t actual = '\0';
@@ -190,7 +194,7 @@ private:
  * @brief Set the Remainder Probabilities of the probability distribution after the prediction.
  * 
  */
-    void setRemainderProbabilities(wchar_t, double, std::map<wchar_t, double>);
+    void setRemainderProbabilities(wchar_t, double, std::unordered_map<wchar_t, double>);
 /**
  * @brief Verifies if the hit probability surpasses any threshold, used when the user defined more than one type of threshold for copy pointer changing.
  * 

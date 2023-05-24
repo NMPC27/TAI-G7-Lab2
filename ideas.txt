@@ -1,9 +1,0 @@
-- Allow `lang` to run with multiple references (allows multithreading)
-- use `const` when applicable
-
-- TODO:
-    - profile the `lang` program and investigate places where optimizations can be made
-    - finish the finite context model (freeze the model after training on the reference, but still consider the target alphabet!)
-        - have to make sure probability distributions are handled properly (only consider characters from the target alphabet, but use information trained on the reference)
-    - investigate different threshold strategies for `locatelang`
-    - add multiprocessing to `findlang`

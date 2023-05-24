@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <map>
+#include <unordered_map>
 #include <algorithm>
 #include <string>
 #include <list>
@@ -306,28 +306,32 @@ int main(int argc, char** argv) {
     }
 
     // First pass of the file to get the alphabet and compute the base distribution
-    model.firstPass(reference);
+    model.firstPassOverReference(reference);
 
     // Initialize the first k-pattern with the most frequent symbol
-    model.initializeWithMostFrequent();
+    model.initializeOnReference();
 
     // Train on the reference text
-    while (!model.eof()) {
+    while (!model.eofReference()) {
         model.registerPattern();
+        model.updateDistribution();
         model.advance();
     }
 
     // Train on the target text
-    model.firstPass(target);
+    model.firstPassOverTarget(target);
+
+    // Reposition the current pattern view (since the file in memory increased in size, it may be in another place)
+    model.initializeOnTarget();
 
     // Using the target's alphabet
-    map<wchar_t, double> information_sums;
+    unordered_map<wchar_t, double> information_sums;
 
     // Reserve space for the verbose machine mode output file buffer
     if (verbose_mode == VerboseMode::machine) {
         // This is the number of characters in the target file only
         int total_number_of_characters = 0;
-        for(std::map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+        for(std::unordered_map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
             total_number_of_characters += model.countOf(it->first);
         }
 
@@ -335,7 +339,7 @@ int main(int argc, char** argv) {
     }
 
     // Loop for prediction through the target
-    while (!model.eof()) {
+    while (!model.eofTarget()) {
 
         // Check if the current has been seen before in the reference text
         bool pattern_has_past = model.isPatternRegistered();
@@ -417,7 +421,7 @@ int main(int argc, char** argv) {
         }
 
         int sum=0;
-        for(std::map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+        for(std::unordered_map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
             sum+=model.countOf(it->first);
         }
         cout << "Mean amount of information of a symbol: " << information_sum/sum << " bits" << endl;
@@ -432,7 +436,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, map<wchar_t, double> base_distribution) {
+void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, unordered_map<wchar_t, double> base_distribution) {
     cout << "Prediction: '" << prediction << "', Actual: '" << actual << "', " << hit_probability << "\t" << " | Distribution: ";
     for (auto pair : base_distribution) {
         cout << "('" << pair.first << "', " << pair.second << ") ";
@@ -462,6 +466,7 @@ void printOptions() {
     cout << "\t\t\t\to - oldest" << endl;
     cout << "\t\t\t\tn - newer" << endl;
     cout << "\t\t\t\tm - most common prediction among all pointers" << endl;
+    cout << "\t\t\t\tc:X - most common prediction among all pointers, bounded by X entries" << endl;
     cout << "\t-t T\t\tThreshold for copy pointer switch (default: f:6):" << endl;
     cout << "\t\t\t\tn:X - static probability below X" << endl;
     cout << "\t\t\t\tf:X - number of successive fails above X" << endl;

@@ -3,32 +3,21 @@
 #include <list>
 #include "copy_pointer_manager.hpp"
 
-bool SimpleCopyPointerManager::registerCopyPointer(std::wstring pattern, size_t position) {
-    if (pointer_map.count(pattern) == 0) {
-
-        struct SimplePointerInfo pattern_info = {
-            .pointers = {position},
-            .copy_pointer_index = 0,
-        };
-
-        pointer_map.insert({pattern, pattern_info});
-        
-        return false;
-    }
-    
-    pointer_map[pattern].pointers.push_back(position);
-    return true;
+bool SimpleCopyPointerManager::registerCopyPointer(std::wstring_view pattern, size_t position) {
+    auto emplace_result = pointer_map.try_emplace(pattern);
+    emplace_result.first->second.pointers.push_back(position);
+    return emplace_result.second;
 }
 
-bool SimpleCopyPointerManager::isPatternRegistered(std::wstring pattern) {
-    return pointer_map.count(pattern) != 0;
+bool SimpleCopyPointerManager::isPatternRegistered(std::wstring_view pattern) {
+    return pointer_map.find(pattern) != pointer_map.end();
 }
 
-int SimpleCopyPointerManager::getCopyPointer(std::wstring pattern) {
-    return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
+int SimpleCopyPointerManager::getCopyPointer(std::wstring_view pattern) {
+    return pointer_map.at(pattern).pointers.at(pointer_map.at(pattern).copy_pointer_index);
 }
 
-void SimpleCopyPointerManager::reportPrediction(std::wstring pattern, bool hit) {
+void SimpleCopyPointerManager::reportPrediction(std::wstring_view pattern, bool hit) {
     if (hit) {
         hits++;
     } else {
@@ -41,46 +30,34 @@ void SimpleCopyPointerManager::reset() {
     misses = 0;
 }
 
-int SimpleCopyPointerManager::getHits(std::wstring current_pattern) { return hits; }
+int SimpleCopyPointerManager::getHits(std::wstring_view current_pattern) { return hits; }
 
-int SimpleCopyPointerManager::getMisses(std::wstring current_pattern) { return misses; }
+int SimpleCopyPointerManager::getMisses(std::wstring_view current_pattern) { return misses; }
 
-bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring pattern, size_t position) {
-    if (pointer_map.count(pattern) == 0) {
+bool CircularArrayCopyPointerManager::registerCopyPointer(std::wstring_view pattern, size_t position) {
+    auto emplace_result = pointer_map.try_emplace(pattern);
+    auto& pointer_info = emplace_result.first->second;
 
-        struct CircularArrayPointerInfo pattern_info = {
-            .pointers = {position},
-            .copy_pointer_index = 0,
-            .insertion_point = 1,
-        };
-
-        pointer_map.insert({pattern, pattern_info});
-        
-        return false;
+    if (pointer_info.insertion_point >= array_size) {
+        pointer_info.pointers[(pointer_info.insertion_point % array_size)] = position;
+    } else {
+        pointer_info.pointers.insert(pointer_info.pointers.begin() + pointer_info.insertion_point, position);
     }
 
-    if (pointer_map[pattern].insertion_point >= array_size)
-    {
-        pointer_map[pattern].pointers[(pointer_map[pattern].insertion_point % array_size)] = position;
-    }else{
-        pointer_map[pattern].pointers.insert(pointer_map[pattern].pointers.begin() + pointer_map[pattern].insertion_point, position);
-    }
+    pointer_info.insertion_point++;
 
-    pointer_map[pattern].insertion_point++;
-
-    
-    return true;
+    return emplace_result.second;
 }
 
-bool CircularArrayCopyPointerManager::isPatternRegistered(std::wstring pattern) {
-    return pointer_map.count(pattern) != 0;
+bool CircularArrayCopyPointerManager::isPatternRegistered(std::wstring_view pattern) {
+    return pointer_map.find(pattern) != pointer_map.end();
 }
 
-int CircularArrayCopyPointerManager::getCopyPointer(std::wstring pattern) {
-    return pointer_map[pattern].pointers[pointer_map[pattern].copy_pointer_index];
+int CircularArrayCopyPointerManager::getCopyPointer(std::wstring_view pattern) {
+    return pointer_map.at(pattern).pointers.at(pointer_map.at(pattern).copy_pointer_index);
 }
 
-void CircularArrayCopyPointerManager::reportPrediction(std::wstring pattern, bool hit) {
+void CircularArrayCopyPointerManager::reportPrediction(std::wstring_view pattern, bool hit) {
     if (hit) {
         hits++;
     } else {
@@ -93,28 +70,33 @@ void CircularArrayCopyPointerManager::reset() {
     misses = 0;
 }
 
-int CircularArrayCopyPointerManager::getHits(std::wstring current_pattern) { return hits; }
+int CircularArrayCopyPointerManager::getHits(std::wstring_view current_pattern) { return hits; }
 
-int CircularArrayCopyPointerManager::getMisses(std::wstring current_pattern) { return misses; }
+int CircularArrayCopyPointerManager::getMisses(std::wstring_view current_pattern) { return misses; }
 
-// TODO: avoid reading the future, it's possible!
-void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
+void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     
-    // we should not consider the last pointer in the pointers array, since it's the one that was just added
-    std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), std::prev(pointer_map[pattern].pointers.end()));
+    // we can consider the last pointer in the pointers array, assuming the current pattern hasn't been added yet
+    std::list<size_t> pointer_candidates(pointer_map.at(pattern).pointers.begin(), std::prev(pointer_map.at(pattern).pointers.end()));
     
-    //printf("pointer_candidates.size(): %d",pointer_candidates.size());
-
     int count;
     int offset = 1;
     wchar_t most_frequent = '\0';
 
-    while (most_frequent == '\0' || count > 1){
-
+    do {
         count = 0;
 
         // Majority algorithm: first pass (determine most frequent)
-        for (size_t pointer : pointer_candidates) {
+        for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
+            size_t pointer = *it;
+            // Remove the pointer candidate if it is starting to point outside of the message
+            if (pointer + offset < mem_file->size())
+                it++;
+            else {
+                it = pointer_candidates.erase(it);
+                continue;
+            }
+            
             wchar_t char_at_pointer = mem_file->at(pointer + offset);
 
             if (count == 0) {
@@ -130,49 +112,58 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring pattern
         // Majority algorithm: second pass (remove all pointers that don't match the most frequent)
         for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
             size_t pointer = *it;
-            if (mem_file->at(pointer + offset) == most_frequent)
+            if ((pointer + offset < mem_file->size()) && mem_file->at(pointer + offset) == most_frequent)
                 it++;
             else
                 it = pointer_candidates.erase(it);
         }
 
         offset++;
-    }
+
+    } while (count > 1);
 
     size_t pointer_candidate = pointer_candidates.back();
     unsigned int i;
-    for (i = 0; i < pointer_map[pattern].pointers.size(); i++)
-        if (pointer_map[pattern].pointers[i] == pointer_candidate)
+    for (i = 0; i < pointer_map.at(pattern).pointers.size(); i++)
+        if (pointer_map.at(pattern).pointers.at(i) == pointer_candidate)
             break;
-    pointer_map[pattern].copy_pointer_index = i;
+    if (i < pointer_map.at(pattern).pointers.size())
+        pointer_map.at(pattern).copy_pointer_index = i;
 
 }
 
-void RecentCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
+void RecentCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     // second to last copy pointer (because most recent could lead to predicting future)
-    pointer_map[pattern].copy_pointer_index = pointer_map[pattern].pointers.size() - 2;
+    pointer_map.at(pattern).copy_pointer_index = pointer_map.at(pattern).pointers.size() - 2;
 }
 
-void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
-    pointer_map[pattern].copy_pointer_index += 1;
+void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
+    pointer_map.at(pattern).copy_pointer_index += 1;
 }
 
-// TODO: avoid reading the future, it's possible!
-void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring pattern, std::vector<wchar_t>* mem_file) {
+void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
     
     // we can consider the last pointer in the pointers array, assuming the current pattern hasn't been added yet
-    std::list<size_t> pointer_candidates(pointer_map[pattern].pointers.begin(), pointer_map[pattern].pointers.end());
+    std::list<size_t> pointer_candidates(pointer_map.at(pattern).pointers.begin(), pointer_map.at(pattern).pointers.end());
     
     int count;
     int offset = 1;
     wchar_t most_frequent = '\0';
 
-    while (most_frequent == '\0' || count > 1){
-
+    do {
         count = 0;
 
         // First pass: majority algorithm (determine most frequent)
-        for (size_t pointer : pointer_candidates) {
+        for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
+            size_t pointer = *it;
+            // Remove the pointer candidate if it is starting to point outside of the message
+            if (pointer + offset < mem_file->size())
+                it++;
+            else {
+                it = pointer_candidates.erase(it);
+                continue;
+            }
+            
             wchar_t char_at_pointer = mem_file->at(pointer + offset);
 
             if (count == 0) {
@@ -188,20 +179,22 @@ void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring pattern, s
         // Second pass (remove all pointers that don't match the most frequent)
         for (std::list<size_t>::iterator it = pointer_candidates.begin(); it != pointer_candidates.end();) {
             size_t pointer = *it;
-            if (mem_file->at(pointer + offset) == most_frequent)
+            if ((pointer + offset < mem_file->size()) && mem_file->at(pointer + offset) == most_frequent)
                 it++;
             else
                 it = pointer_candidates.erase(it);
         }
 
         offset++;
-    }
+
+    } while (count > 1);
 
     size_t pointer_candidate = pointer_candidates.back();
     unsigned int i;
-    for (i = 0; i < pointer_map[pattern].pointers.size(); i++)
-        if (pointer_map[pattern].pointers[i] == pointer_candidate)
+    for (i = 0; i < pointer_map.at(pattern).pointers.size(); i++)
+        if (pointer_map.at(pattern).pointers.at(i) == pointer_candidate)
             break;
-    pointer_map[pattern].copy_pointer_index = i;
+    if (i < pointer_map.at(pattern).pointers.size())
+        pointer_map.at(pattern).copy_pointer_index = i;
 
 }

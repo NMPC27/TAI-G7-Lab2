@@ -1,7 +1,8 @@
 #include <vector>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <cwchar>
+#include <string_view>
 
 /**
  *  \file copy_pointer_manager.hpp (interface file)
@@ -31,12 +32,16 @@
 struct SimplePointerInfo {
     std::vector<size_t> pointers;
     int copy_pointer_index;     // Pattern's last symbol
+
+    SimplePointerInfo() : pointers(), copy_pointer_index(0) {}
 };
 
 struct CircularArrayPointerInfo {
     std::vector<size_t> pointers;
     int copy_pointer_index;     // Pattern's last symbol
-    int insertion_point;        
+    int insertion_point;
+
+    CircularArrayPointerInfo() : pointers(), copy_pointer_index(0), insertion_point(0) {}
 };
 
 /**
@@ -53,7 +58,7 @@ public:
  * 
  * @return int 
  */
-    virtual int getCopyPointer(std::wstring) = 0;
+    virtual int getCopyPointer(std::wstring_view) = 0;
 /**
  * @brief Reposition the copy pointer of a pattern.
  * 
@@ -63,7 +68,7 @@ public:
  * @param reading_strategy
  * 
  */
-    virtual void repositionCopyPointer(std::wstring, std::vector<wchar_t>*) = 0;
+    virtual void repositionCopyPointer(std::wstring_view, std::vector<wchar_t>*) = 0;
 /**
  * @brief Register a new copy pointer for a pattern.
  * 
@@ -73,7 +78,7 @@ public:
  * @return true 
  * @return false 
  */
-    virtual bool registerCopyPointer(std::wstring, size_t) = 0;
+    virtual bool registerCopyPointer(std::wstring_view, size_t) = 0;
 /**
  * @brief Check if a pattern has already been registered.
  * 
@@ -82,7 +87,7 @@ public:
  * @return true 
  * @return false 
  */
-    virtual bool isPatternRegistered(std::wstring pattern) = 0;
+    virtual bool isPatternRegistered(std::wstring_view pattern) = 0;
 /**
  * @brief checks if the prediction was correct and updates the hits and misses.
  * 
@@ -90,7 +95,7 @@ public:
  * @param hit
  * 
  */
-    virtual void reportPrediction(std::wstring, bool) = 0;
+    virtual void reportPrediction(std::wstring_view, bool) = 0;
 /**
  * @brief resets the hits and misses.
  * 
@@ -104,7 +109,7 @@ public:
  * 
  * @return int 
  */
-    virtual int getHits(std::wstring) = 0;
+    virtual int getHits(std::wstring_view) = 0;
 
 /**
  * @brief Get the Misses of a pattern.
@@ -113,7 +118,7 @@ public:
  * 
  * @return int 
  */
-    virtual int getMisses(std::wstring) = 0;
+    virtual int getMisses(std::wstring_view) = 0;
 };
 
 /**
@@ -123,38 +128,38 @@ public:
 class SimpleCopyPointerManager : public CopyPointerManager {
 
 protected:
-    std::map<std::wstring, SimplePointerInfo> pointer_map;
+    std::unordered_map<std::wstring_view, SimplePointerInfo> pointer_map;
     int hits = 0;
     int misses = 0;
 
 public:
     virtual ~SimpleCopyPointerManager() {};
-    int getCopyPointer(std::wstring);
-    bool registerCopyPointer(std::wstring, size_t);
-    bool isPatternRegistered(std::wstring);
-    void reportPrediction(std::wstring, bool);
+    int getCopyPointer(std::wstring_view);
+    bool registerCopyPointer(std::wstring_view, size_t);
+    bool isPatternRegistered(std::wstring_view);
+    void reportPrediction(std::wstring_view, bool);
     void reset();
-    int getHits(std::wstring);
-    int getMisses(std::wstring);
+    int getHits(std::wstring_view);
+    int getMisses(std::wstring_view);
 };
 
 class CircularArrayCopyPointerManager : public CopyPointerManager {
 
-    std::map<std::wstring, CircularArrayPointerInfo> pointer_map;
+    std::unordered_map<std::wstring_view, CircularArrayPointerInfo> pointer_map;
     int hits = 0;
     int misses = 0;
     int array_size;
 
 public:
     CircularArrayCopyPointerManager(int size) : array_size(size) {}
-    int getCopyPointer(std::wstring);
-    bool registerCopyPointer(std::wstring, size_t);
-    bool isPatternRegistered(std::wstring);
-    void reportPrediction(std::wstring, bool);
+    int getCopyPointer(std::wstring_view);
+    bool registerCopyPointer(std::wstring_view, size_t);
+    bool isPatternRegistered(std::wstring_view);
+    void reportPrediction(std::wstring_view, bool);
     void reset();
-    int getHits(std::wstring);
-    int getMisses(std::wstring);
-    void repositionCopyPointer(std::wstring, std::vector<wchar_t>*);
+    int getHits(std::wstring_view);
+    int getMisses(std::wstring_view);
+    void repositionCopyPointer(std::wstring_view, std::vector<wchar_t>*);
 };
 
 /**
@@ -167,7 +172,7 @@ public:
 
 class MostCommonCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::wstring, std::vector<wchar_t>*);    
+    void repositionCopyPointer(std::wstring_view, std::vector<wchar_t>*);    
 };
 
 /**
@@ -177,7 +182,7 @@ public:
  */
 class RecentCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::wstring, std::vector<wchar_t>*);
+    void repositionCopyPointer(std::wstring_view, std::vector<wchar_t>*);
 };
 
 /**
@@ -187,5 +192,5 @@ public:
  */
 class NextOldestCopyPointerManager : public SimpleCopyPointerManager {
 public:
-    void repositionCopyPointer(std::wstring, std::vector<wchar_t>*);
+    void repositionCopyPointer(std::wstring_view, std::vector<wchar_t>*);
 };

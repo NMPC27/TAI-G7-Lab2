@@ -1,0 +1,8 @@
+- fix finite context model memory usage and performance
+- check why using the uniform distribution produces an information valley on *all* references
+- investigate different threshold strategies for `locatelang` (use 2 thresholds at the same time)
+- LOW PRIORITY: use `const` when applicable (for performance)?
+- use ordered map for the probability distribution, which allows optimization on the FiniteContextDistribution
+- MostCommonCopyPointerManager, CircularArrayCopyPointerManager and RecentCopyPointerManager all behave the same, for a given pattern, once the model is trained on the reference, i.e. they always produce the same output.
+  This is important, because MostCommonCopyPointerManager performs a majority algorithm every time it finds a pattern, but the result will always be the same
+- When copying from the reference, it can go out of bounds (especially when using RecentCopyPointerManager). Reposition the pointer if it reaches the end, or wrap the copy position to the beginning (it's probably better?).
