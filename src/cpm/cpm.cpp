@@ -30,7 +30,7 @@ bool CopyModel::isPatternRegistered() {
 }
 
 void CopyModel::updateDistribution() {
-    // Update the base distribution with the current context (the current pattern) before advancing
+    // Update the base distribution with the current context (the current pattern) before advancing (should be training on the reference)
     base_distribution->updateWithContext(current_pattern, reference_file.at(current_position + 1));
 }
 
@@ -38,8 +38,8 @@ void CopyModel::advance() {
     // Update current pattern and advance read pointer (current_position)
     current_pattern = std::wstring_view(current_pattern.data() + 1, current_pattern.size());
     current_position++;
-    // Advance copy pointer
-    copy_position++;
+    // Advance copy pointer, avoiding going out of the reference's bounds (assumes repeat-like wrapping, and so the end is repeated at the beginning)
+    copy_position = (copy_position + 1) % (reference_file.size() - k);
 }
 
 // Returns true when able to predict
