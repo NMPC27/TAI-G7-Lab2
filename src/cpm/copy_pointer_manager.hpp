@@ -32,12 +32,16 @@
 struct SimplePointerInfo {
     std::vector<size_t> pointers;
     int copy_pointer_index;     // Pattern's last symbol
+
+    SimplePointerInfo() : pointers(), copy_pointer_index(0) {}
 };
 
 struct CircularArrayPointerInfo {
     std::vector<size_t> pointers;
     int copy_pointer_index;     // Pattern's last symbol
-    int insertion_point;        
+    int insertion_point;
+
+    CircularArrayPointerInfo() : pointers(), copy_pointer_index(0), insertion_point(0) {}
 };
 
 /**
