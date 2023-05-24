@@ -340,28 +340,16 @@ int main(int argc, char** argv) {
 
     // Loop for prediction through the target
     while (!model.eofTarget()) {
-
-        bool can_predict;
-        try {
-            // Check if the current has been seen before in the reference text
-            bool pattern_has_past = model.isPatternRegistered();
-            // Check if the model can predict the next symbol
-            can_predict = model.predictionSetup(pattern_has_past);
-        } catch (const exception e) {
-            cerr << "Whoopsieee" << endl;
-            exit(1);
-        }
+        
+        // Check if the current has been seen before in the reference text
+        bool pattern_has_past = model.isPatternRegistered();
+        // Check if the model can predict the next symbol
+        bool can_predict = model.predictionSetup(pattern_has_past);
 
         int output_color_condition = can_predict ? 1 : 0;
         // If the model can predict, then predict and check if the prediction was correct
         if (can_predict) {
-            bool hit;
-            try {
-                hit = model.predict();
-            } catch (const exception e) {
-                cerr << "Whoopsie daisy" << endl;
-                exit(1);
-            }
+            bool hit = model.predict();
             output_color_condition += hit ? 1 : 0;
         // If the model can't predict, then guess
         } else {
@@ -372,12 +360,7 @@ int main(int argc, char** argv) {
 
         // The probability distribution that the model provides doesn't account for whether or not the current prediction was a success,
         // as that would incorporate information from the future which would not be known to the decoder.
-        try {
-            information_sums[model.actual] += -log2(model.probability_distribution.at(model.actual));
-        } catch (const exception e) {
-            cerr << "Cmon bruh" << endl;
-            exit(1);
-        }
+        information_sums[model.actual] += -log2(model.probability_distribution.at(model.actual));
 
         // Output the relevant information at this step
         switch (verbose_mode) {
