@@ -374,7 +374,7 @@ def main(
         plt.figure()
         for i in range(len(information_bins)):
             plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
-        plt.plot([static_threshold] * information_streams.shape[1])
+        plt.plot([static_threshold] * information_streams.shape[1], label='<static threshold>')
         plt.legend()
         plt.title('Information of each symbol in the target after training on each reference')
         plt.xlabel('Target position')
