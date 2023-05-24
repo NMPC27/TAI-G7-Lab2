@@ -289,7 +289,7 @@ def main(
 
     information_stream_row = np.fromfile(os.path.join(target_cache_path, information_bins[0]), np.float64)
     information_streams = np.zeros((len(information_bins), information_stream_row.size))
-    information_streams[0, :] = low_pass_filter(information_stream_row)
+    information_streams[0, :] = low_pass_filter(information_stream_row, low_pass_filter_dropoff)
     print('.', end='', flush=True)
 
     data_to_filename = {'0': information_bins[0], '-1': 'unknown'}
@@ -297,7 +297,7 @@ def main(
     for i, information_bin in enumerate(information_bins[1:]):
         data_to_filename[str(i+1)] = information_bin
         information_stream_row = np.fromfile(os.path.join(target_cache_path, information_bin), np.float64)
-        information_streams[i+1, :] = low_pass_filter(information_stream_row,low_pass_filter_dropoff)
+        information_streams[i+1, :] = low_pass_filter(information_stream_row, low_pass_filter_dropoff)
         print('.', end='', flush=True)
     
     # Define a threshold using the target alphabet size
