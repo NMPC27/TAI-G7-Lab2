@@ -10,14 +10,14 @@
 void CopyModel::initializeOnReference() {
     current_pattern = std::wstring_view(reference_file.data(), k);
     copy_pattern = current_pattern;
-    current_position = -1;
-    copy_position = -1;
+    current_position = k-1;
+    copy_position = k-1;
 }
 
 void CopyModel::initializeOnTarget() {
     current_pattern = std::wstring_view(target_file.data(), k);
-    current_position = -1;
-    copy_position = -1;
+    current_position = k-1;
+    copy_position = k-1;
 }
 
 // Return true if the pattern is already in the map
@@ -76,7 +76,8 @@ bool CopyModel::predictionSetup(bool pattern_has_past) {
             pointer_threshold[i]->reset();
     }
 
-    return predicting;
+    // Can only predict if we predict a character that is actually in the target's alphabet
+    return predicting && alphabet_counts.find(reference_file.at(copy_position + 1)) != alphabet_counts.end();
 }
 
 bool CopyModel::predict() {
@@ -90,8 +91,7 @@ bool CopyModel::predict() {
 
     // Update internal probability distribution
     setRemainderProbabilities(prediction, 1.0 - hit_probability, base_distribution->getDistributionWithContext(current_pattern));
-    // TODO: raise error if not present?
-    probability_distribution[prediction] = hit_probability;
+    probability_distribution.at(prediction) = hit_probability;
 
     return hit;
 }
@@ -109,7 +109,6 @@ void CopyModel::firstPassOverReference(std::string reference_name) {
     wchar_t c = file.get();
     
     while (!file.eof()) {
-        // TODO: PERFORMANCE: read in chunks instead of character by character?
         reference_file.push_back(c);
 
         alphabet_counts.insert({c, 0});
@@ -122,7 +121,7 @@ void CopyModel::firstPassOverReference(std::string reference_name) {
 
     // Copy the last part of the file to the beginning, to serve as the past (repeat-like wrapping)
     for (int i = 0; i < k; i++)
-        reference_file[i] = reference_file[reference_file.size() - k + i];
+        reference_file.at(i) = reference_file[reference_file.size() - k + i];
 }
 
 void CopyModel::firstPassOverTarget(std::string target_name) {
@@ -140,7 +139,6 @@ void CopyModel::firstPassOverTarget(std::string target_name) {
     std::unordered_map<wchar_t, int> target_alphabet_counts;
 
     while (!file.eof()) {
-        // TODO: PERFORMANCE: read in chunks instead of character by character?
         target_file.push_back(c);
 
         target_alphabet_counts.insert({c, 0});
@@ -153,7 +151,7 @@ void CopyModel::firstPassOverTarget(std::string target_name) {
 
     // Copy the last part of the reference file to the beginning
     for (int i = 0; i < k; i++)
-        target_file[i] = reference_file[reference_file.size() - k + i];
+        target_file.at(i) = reference_file.at(reference_file.size() - k + i);
 
     // Remove characters that were in the reference but not in the target
     for (auto it = alphabet_counts.begin(); it != alphabet_counts.end();) {
@@ -165,12 +163,11 @@ void CopyModel::firstPassOverTarget(std::string target_name) {
     }
     
     // Add characters that were in the target but not in the reference
-    for (auto pair : target_alphabet_counts)
-        if (alphabet_counts.find(pair.first) == alphabet_counts.end())
-            alphabet_counts[pair.first] = 1;    // use count at 1 to prevent infinite information
+    for (auto& pair : target_alphabet_counts)
+        alphabet_counts.insert({pair.first, 1});    // use count at 1 to prevent infinite information
 
     base_distribution->setBaseDistribution(alphabet_counts);
-    for (auto pair : alphabet_counts)
+    for (auto& pair : alphabet_counts)
         probability_distribution[pair.first] = 0;
 }
 
@@ -185,22 +182,22 @@ bool CopyModel::eofTarget() {
 }
 
 int CopyModel::countOf(wchar_t c) {
-    return alphabet_counts[c];
+    return alphabet_counts.at(c);
 }
 
 double CopyModel::calculateProbability(int hits, int misses) {
     return (hits + alpha) / (hits + misses + 2 * alpha);
 }
 
-void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute, std::unordered_map<wchar_t, double> distribution) {
+void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute, std::map<wchar_t, double> distribution) {
     double base_remainder_total = 0.0;
-    for (auto pair : distribution)
+    for (auto& pair : distribution)
         if (pair.first != exception)
             base_remainder_total += pair.second;
     
-    for (auto pair : distribution)
+    for (auto& pair : distribution)
         if (pair.first != exception)
-            probability_distribution[pair.first] = probability_to_distribute * distribution[pair.first] / base_remainder_total;
+            probability_distribution.at(pair.first) = probability_to_distribute * distribution.at(pair.first) / base_remainder_total;
 }
 
 double CopyModel::progress() {

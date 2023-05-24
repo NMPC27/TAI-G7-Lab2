@@ -2,6 +2,7 @@
 #include <string>
 #include <cwchar>
 #include <string_view>
+#include <map>
 #include <unordered_map>
 
 /**
@@ -35,7 +36,7 @@ public:
     virtual ~BaseDistribution() {};
     virtual void setBaseDistribution(std::unordered_map<wchar_t, int> histogram) = 0;
     virtual void updateWithContext(std::wstring_view context, wchar_t symbol) {};
-    virtual std::unordered_map<wchar_t, double> getDistributionWithContext(std::wstring_view context) = 0;
+    virtual std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context) = 0;
 };
 
 /**
@@ -47,11 +48,11 @@ public:
 
 class UniformDistribution : public BaseDistribution {
 
-    std::unordered_map<wchar_t, double> distribution;
+    std::map<wchar_t, double> distribution;
 
 public:
     void setBaseDistribution(std::unordered_map<wchar_t, int> histogram);
-    std::unordered_map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
 };
 
 /**
@@ -63,11 +64,11 @@ public:
 
 class FrequencyDistribution : public BaseDistribution {
 
-    std::unordered_map<wchar_t, double> distribution;
+    std::map<wchar_t, double> distribution;
 
 public:
     void setBaseDistribution(std::unordered_map<wchar_t, int> histogram);
-    std::unordered_map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
 };
 
 /**
@@ -80,14 +81,16 @@ public:
 
 class FiniteContextDistribution : public BaseDistribution {
 
-    std::unordered_map<std::wstring_view, std::unordered_map<wchar_t, double>> context_table;
-    std::vector<wchar_t> alphabet;
+    std::unordered_map<std::wstring_view, std::unordered_map<wchar_t, double>> context_table_counts;
+    std::unordered_map<std::wstring_view, std::vector<double>> context_table_distributions;
+    std::vector<wchar_t> alphabet; // sorted
     unsigned int k;
     double alpha;
+    std::map<wchar_t, double> distribution;
 
 public:
     FiniteContextDistribution(double alpha, unsigned int k) : alpha(alpha), k(k) {}
     void setBaseDistribution(std::unordered_map<wchar_t, int> histogram);
     void updateWithContext(std::wstring_view context, wchar_t symbol);
-    std::unordered_map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
+    std::map<wchar_t, double> getDistributionWithContext(std::wstring_view context);
 };

@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
                         cerr << "Error: invalid option for '-r c:X' (" << optarg << ")" << endl;
                         return 1;
                     }
-                }else {
+                } else {
                     cerr << "Error: invalid option for '-r' (" << optarg[0] << ")" << endl;
                     return 1;
                 }
@@ -308,7 +308,7 @@ int main(int argc, char** argv) {
     // First pass of the file to get the alphabet and compute the base distribution
     model.firstPassOverReference(reference);
 
-    // Initialize the first k-pattern with the most frequent symbol
+    // Initialize the first k-pattern with the reference's end
     model.initializeOnReference();
 
     // Train on the reference text
@@ -331,7 +331,7 @@ int main(int argc, char** argv) {
     if (verbose_mode == VerboseMode::machine) {
         // This is the number of characters in the target file only
         int total_number_of_characters = 0;
-        for(std::unordered_map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+        for(map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
             total_number_of_characters += model.countOf(it->first);
         }
 
@@ -341,15 +341,27 @@ int main(int argc, char** argv) {
     // Loop for prediction through the target
     while (!model.eofTarget()) {
 
-        // Check if the current has been seen before in the reference text
-        bool pattern_has_past = model.isPatternRegistered();
-        // Check if the model can predict the next symbol
-        bool can_predict = model.predictionSetup(pattern_has_past);
+        bool can_predict;
+        try {
+            // Check if the current has been seen before in the reference text
+            bool pattern_has_past = model.isPatternRegistered();
+            // Check if the model can predict the next symbol
+            can_predict = model.predictionSetup(pattern_has_past);
+        } catch (const exception e) {
+            cerr << "Whoopsieee" << endl;
+            exit(1);
+        }
 
         int output_color_condition = can_predict ? 1 : 0;
         // If the model can predict, then predict and check if the prediction was correct
         if (can_predict) {
-            bool hit = model.predict();
+            bool hit;
+            try {
+                hit = model.predict();
+            } catch (const exception e) {
+                cerr << "Whoopsie daisy" << endl;
+                exit(1);
+            }
             output_color_condition += hit ? 1 : 0;
         // If the model can't predict, then guess
         } else {
@@ -360,7 +372,12 @@ int main(int argc, char** argv) {
 
         // The probability distribution that the model provides doesn't account for whether or not the current prediction was a success,
         // as that would incorporate information from the future which would not be known to the decoder.
-        information_sums[model.actual] += -log2(model.probability_distribution[model.actual]);
+        try {
+            information_sums[model.actual] += -log2(model.probability_distribution.at(model.actual));
+        } catch (const exception e) {
+            cerr << "Cmon bruh" << endl;
+            exit(1);
+        }
 
         // Output the relevant information at this step
         switch (verbose_mode) {
@@ -387,7 +404,7 @@ int main(int argc, char** argv) {
                 }
                 break;
             case VerboseMode::machine:
-                verbose_mode_machine_file_buffer.push_back(-log2(model.probability_distribution[model.actual]));
+                verbose_mode_machine_file_buffer.push_back(-log2(model.probability_distribution.at(model.actual)));
             case VerboseMode::progress:
                 printf("Progress: %3f%%\r", model.progress() * 100);
                 break;
@@ -408,20 +425,20 @@ int main(int argc, char** argv) {
 
     if (verbose_mode == VerboseMode::minimal) {
         double information_sum = 0.0;
-        for (auto pair : information_sums)
+        for (auto& pair : information_sums)
             information_sum += pair.second;
         cout << information_sum << endl;
     }
     else {
         double information_sum = 0.0;
         cout << "Average amount of information in symbol..." << endl;
-        for (auto pair : information_sums) {
+        for (auto& pair : information_sums) {
             cout << pair.first << ": " << pair.second / model.countOf(pair.first) << " bits" << endl;
             information_sum += pair.second;
         }
 
         int sum=0;
-        for(std::unordered_map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+        for (map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
             sum+=model.countOf(it->first);
         }
         cout << "Mean amount of information of a symbol: " << information_sum/sum << " bits" << endl;
@@ -436,9 +453,9 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, unordered_map<wchar_t, double> base_distribution) {
+void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, map<wchar_t, double> base_distribution) {
     cout << "Prediction: '" << prediction << "', Actual: '" << actual << "', " << hit_probability << "\t" << " | Distribution: ";
-    for (auto pair : base_distribution) {
+    for (auto& pair : base_distribution) {
         cout << "('" << pair.first << "', " << pair.second << ") ";
     }
     cout << endl;
