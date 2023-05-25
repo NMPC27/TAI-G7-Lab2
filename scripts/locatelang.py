@@ -321,7 +321,7 @@ def main(
     print(' done!')
 
     print('Method 1 results:')
-    print('sections=', minimum_references_locations, sep='')
+    print('sections=', np.array_str(minimum_references_locations, max_line_width=np.inf), sep='')
     print('languages=', [data_to_filename[str(reference_i)] for reference_i in minimum_references], sep='')
 
     # print('Detecting language spans with method 2...', end='', flush=True)
@@ -357,28 +357,16 @@ def main(
         print_labeled_target_terminal(minimum_references, minimum_references_locations, target_path, data_to_filename)
 
     if plot:
-        # Threshold study
-        plt.figure()
-        overall_mean = np.mean(information_streams, axis=0)
-        mean_without_minimum_reference = (np.sum(information_streams, axis=0) - np.min(information_streams, axis=0)) / (information_streams.shape[0] - 1)
-        plt.plot(overall_mean, label='overall mean')
-        plt.plot(mean_without_minimum_reference, label='mean without minimum')
-        plt.plot(np.min(information_streams, axis=0), label='minimum')
-        plt.plot(np.sort(information_streams, axis=0)[1, :], label='second minimum')
-        plt.title('Information of each symbol in the target after training on each reference')
-        plt.xlabel('Target position')
-        plt.ylabel('Information (bits)')
-        plt.legend()
-
         # Information over time
-        plt.figure()
+        plt.figure(figsize=(15, 8))
         for i in range(len(information_bins)):
             plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
         plt.plot([static_threshold] * information_streams.shape[1], label='<static threshold>')
-        plt.legend()
         plt.title('Information of each symbol in the target after training on each reference')
         plt.xlabel('Target position')
         plt.ylabel('Information (bits)')
+        plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
+        plt.tight_layout()
         plt.show()
 
 
