@@ -321,7 +321,7 @@ def main(
     print(' done!')
 
     print('Method 1 results:')
-    print('sections=', minimum_references_locations, sep='')
+    print('sections=', np.array_str(minimum_references_locations, max_line_width=np.inf), sep='')
     print('languages=', [data_to_filename[str(reference_i)] for reference_i in minimum_references], sep='')
 
     # print('Detecting language spans with method 2...', end='', flush=True)
@@ -356,29 +356,25 @@ def main(
     if print_labeled_target:
         print_labeled_target_terminal(minimum_references, minimum_references_locations, target_path, data_to_filename)
 
-    if plot:
-        # Threshold study
-        plt.figure()
-        overall_mean = np.mean(information_streams, axis=0)
-        mean_without_minimum_reference = (np.sum(information_streams, axis=0) - np.min(information_streams, axis=0)) / (information_streams.shape[0] - 1)
-        plt.plot(overall_mean, label='overall mean')
-        plt.plot(mean_without_minimum_reference, label='mean without minimum')
-        plt.plot(np.min(information_streams, axis=0), label='minimum')
-        plt.plot(np.sort(information_streams, axis=0)[1, :], label='second minimum')
-        plt.title('Information of each symbol in the target after training on each reference')
-        plt.xlabel('Target position')
-        plt.ylabel('Information (bits)')
-        plt.legend()
+    colors = [
+        '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF',
+        '#800000', '#008000', '#000080', '#808000', '#008080', '#800080',
+        '#FFA500', '#A52A2A', '#800080', '#FFC0CB', '#000000', '#FF69B4',
+        '#7CFC00', '#8A2BE2', '#FF4500', '#00FF7F', '#1E90FF'
+    ]
 
+
+    if plot:
         # Information over time
-        plt.figure()
+        plt.figure(figsize=(15, 8))
         for i in range(len(information_bins)):
-            plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
+            plt.plot(information_streams[i, :],color = colors[i%len(colors)], label=data_to_filename[str(i)])
         plt.plot([static_threshold] * information_streams.shape[1], label='<static threshold>')
-        plt.legend()
         plt.title('Information of each symbol in the target after training on each reference')
         plt.xlabel('Target position')
         plt.ylabel('Information (bits)')
+        plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
+        plt.tight_layout()
         plt.show()
 
 
@@ -394,7 +390,7 @@ if __name__ == '__main__':
 Should run at the root of the project.
 In order to pass the list of arguments 'land_args', put those arguments at the end with '--' before specifying them, in order to not process '-X' as arguments to this script.
 
-Example: findLang -t <TARGET> -- -r n''')
+Example: locatelang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, type=str, help='target file of which to identify language segments')
     parser.add_argument('-m', '--minimum-threshold', type=float, default=1, help='threshold of bits only below which is a portion of compressed text to be considered of a reference language' + default_str)
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
