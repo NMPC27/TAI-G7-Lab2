@@ -1,6 +1,10 @@
-- check why using the uniform distribution produces an information valley on *all* references
 - investigate different threshold strategies for `locatelang` (use 2 thresholds at the same time)
 - LOW PRIORITY: use `const` when applicable (for performance)?
 - MostCommonCopyPointerManager, CircularArrayCopyPointerManager and RecentCopyPointerManager all behave the same, for a given pattern, once the model is trained on the reference, i.e. they always produce the same output.
   This is important, because MostCommonCopyPointerManager performs a majority algorithm every time it finds a pattern, but the result will always be the same
 - Preprocess the references? (such as removing newlines)
+
+REPORT TO SAY:
+- The reason why there is a valley when evaluating the target "dog.txt" is because most references have a specific similar past and can start copying equally.
+  The segment of the target text in question is "e international", which is 15 characters long. After evaluating "e internatio" when not predicting, most models trained on the different references can seek that past,
+  and it turns out the completed word is "international", which warrants 3 successful predictions.
