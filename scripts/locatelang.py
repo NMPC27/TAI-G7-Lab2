@@ -394,7 +394,7 @@ if __name__ == '__main__':
 Should run at the root of the project.
 In order to pass the list of arguments 'land_args', put those arguments at the end with '--' before specifying them, in order to not process '-X' as arguments to this script.
 
-Example: findLang -t <TARGET> -- -r n''')
+Example: locatelang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, type=str, help='target file of which to identify language segments')
     parser.add_argument('-m', '--minimum-threshold', type=float, default=1, help='threshold of bits only below which is a portion of compressed text to be considered of a reference language' + default_str)
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
