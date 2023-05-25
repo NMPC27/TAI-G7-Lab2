@@ -12,3 +12,5 @@
 
 - Finite-context model is built while processing the file, or completely in a first pass?
     - ???
+
+- Evaluate the classifier's accuracy as a function of the reference and target texts' lengths... how so?
