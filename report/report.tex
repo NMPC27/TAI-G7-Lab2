@@ -10,7 +10,7 @@
 \begin{document}
 
 \title{
-    Assignment 2 - Copy models for data compression with references \\
+    Assignment 2 - Language detection using Copy Models for compression \\
     \large{Algorithmic Information Theory (2022/23) \\
     Universidade de Aveiro}
 }
@@ -27,11 +27,41 @@
 \section{Introduction}
 \label{sec:introduction}
 
+The goal of this assignment is to implement a language detection system using the previously developed copy model from the last assignment.
+The system is capable of detecting the language of a given text, if it is one of the languages used to train the model.
+To implement this, a new version of the copy model was developed, called lang, which received a reference text to train the model and a target text to be tested if it is in the same language as the reference text.
+One of the new features implement in the lang model is the ability to use a finite-context model for the data compression, instead of using the uniform and frequency probability distributions.
+
+With the new model implemented, two other scripts were developed to test the performance of the model and obtain the language prediction in a text file or in specific sections of a text.
+The first script is called find_lang, which receives a target text and uses all the existing references to predict the language of the target text, returning the language with the highest probability of being the target's language.
+This is done by executing the lang model for each reference text and comparing the total information obtained for each language, returning the referecne language with the lowest information.
+
+The second script is called locate_lang, which receives a target text and, like the find_lang script, executes the lang model for each reference text, but instead of returning the language with the lowest information, it returns the language with the lowest information for each section of the target text.
+This is done by saving which language has the lowest information for each step/character of the target text, and then checking the intervals where the language is the same, returning the language with the lowest information for each interval.
+
+In this report we will present the methodology used to implement the lang model, the find_lang and locate_lang scripts, in more detail in \ref*{sec:methodology} section, and the results obtained by testing the scripts with different target texts in the \ref*{sec:results}.
+And finally, in \ref*{sec:conclusion} section, we will present the conclusions of this assignment.
+
 \section{Methodology}
 \label{sec:methodology}
 
+\subsection{Lang model}
+\label{subsec:methodology_lang_model}
+
+\subsection{Find lang}
+\label{subsec:methodology_find_lang}
+
+\subsection{Locate lang}
+\label{subsec:methodology_locate_lang}
+
 \section{Results}
 \label{sec:results}
+
+\subsection{Find lang}
+\label{subsec:results_find_lang}
+
+\subsection{Locate lang}
+\label{subsec:results_locate_lang}
 
 \section{Conclusion}
 \label{sec:conclusion}
