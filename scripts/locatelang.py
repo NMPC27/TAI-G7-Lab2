@@ -356,11 +356,19 @@ def main(
     if print_labeled_target:
         print_labeled_target_terminal(minimum_references, minimum_references_locations, target_path, data_to_filename)
 
+    colors = [
+        '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF',
+        '#800000', '#008000', '#000080', '#808000', '#008080', '#800080',
+        '#FFA500', '#A52A2A', '#800080', '#FFC0CB', '#000000', '#FF69B4',
+        '#7CFC00', '#8A2BE2', '#FF4500', '#00FF7F', '#1E90FF'
+    ]
+
+
     if plot:
         # Information over time
         plt.figure(figsize=(15, 8))
         for i in range(len(information_bins)):
-            plt.plot(information_streams[i, :], label=data_to_filename[str(i)])
+            plt.plot(information_streams[i, :],color = colors[i%len(colors)], label=data_to_filename[str(i)])
         plt.plot([static_threshold] * information_streams.shape[1], label='<static threshold>')
         plt.title('Information of each symbol in the target after training on each reference')
         plt.xlabel('Target position')
