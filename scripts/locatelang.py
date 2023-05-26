@@ -256,7 +256,8 @@ def main(
     static_threshold: float = None,
     low_pass_filter_dropoff: float = 1e2,
     quit_at_error: bool = False,
-    plot: bool = False
+    plot: bool = False,
+    save_result: str = None
 ):
     
     references = set(reference for reference in os.listdir(references_folder) if reference != '.empty')
@@ -283,7 +284,8 @@ def main(
 
     information_bins = [f for f in os.listdir(target_cache_path) if f != '.info']
 
-    assert len(information_bins) == len(references), "the number of calculated information '.bin' files is different from the number of references!"
+    if len(information_bins) != len(references):
+        raise RuntimeError("the number of calculated information '.bin' files is different from the number of references!")
 
     print('Loading cached information bins', end='', flush=True)
 
@@ -375,7 +377,11 @@ def main(
         plt.ylabel('Information (bits)')
         plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
         plt.tight_layout()
-        plt.show()
+
+        if save_result:
+            plt.savefig(save_result+'.png')
+        else:
+            plt.show()
 
 
 
@@ -402,9 +408,11 @@ Example: locatelang -t <TARGET> -- -r n''')
     parser.add_argument('--static-threshold', type=float, help='a static, global threshold of bits for all languages, only below which are reference languages considered (default: None)')
     parser.add_argument('--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
     parser.add_argument('--plot', action='store_true', help='whether to plot demonstrational graphs')
+    parser.add_argument('--save-result', type=str, default=None, help='ro run with the script')
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 
     args = parser.parse_args()
+
 
     main(
         target_path=args.target,
@@ -419,4 +427,5 @@ Example: locatelang -t <TARGET> -- -r n''')
         low_pass_filter_dropoff=args.frequency_filter,
         quit_at_error=not args.ignore_errors,
         plot=args.plot,
+        save_result=args.save_result
     )
