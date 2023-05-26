@@ -283,7 +283,8 @@ def main(
 
     information_bins = [f for f in os.listdir(target_cache_path) if f != '.info']
 
-    assert len(information_bins) == len(references), "the number of calculated information '.bin' files is different from the number of references!"
+    if len(information_bins) != len(references):
+        raise RuntimeError("the number of calculated information '.bin' files is different from the number of references!")
 
     print('Loading cached information bins', end='', flush=True)
 
