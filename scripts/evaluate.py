@@ -7,12 +7,6 @@ from sys import stdin
 
 
 def calculate_accuracy(result_sections: List[int], result_languages: List[str], ideal_sections: List[int], ideal_languages: List[str], total_symbols: int) -> float:
-    if len(result_sections) != len(ideal_sections):
-        raise ValueError(f'The result and ideal section arrays should have the same shape! ({len(result_sections)} != {len(ideal_sections)})')
-
-    if len(result_languages) != len(ideal_languages):
-        raise ValueError(f'The result and ideal language arrays should have the same size! ({len(result_languages)} != {len(ideal_languages)})')
-
     total_languages = set(result_languages) | set(ideal_languages)
     language_id_mapping = {language: i for i, language in enumerate(total_languages)}
 
