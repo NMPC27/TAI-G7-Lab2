@@ -133,12 +133,13 @@ void CircularArrayCopyPointerManager::repositionCopyPointer(std::wstring_view pa
 }
 
 void RecentCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
-    // second to last copy pointer (because most recent could lead to predicting future)
-    pointer_map.at(pattern).copy_pointer_index = pointer_map.at(pattern).pointers.size() - 2;
+    // use the last copy pointer, which would be the most recent
+    pointer_map.at(pattern).copy_pointer_index = pointer_map.at(pattern).pointers.size() - 1;
 }
 
 void NextOldestCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {
-    pointer_map.at(pattern).copy_pointer_index += 1;
+    // wrap around the array, since the model trained on the reference is frozen and the pointers array can be exhausted
+    pointer_map.at(pattern).copy_pointer_index = (pointer_map.at(pattern).copy_pointer_index + 1) % pointer_map.at(pattern).pointers.size();
 }
 
 void MostCommonCopyPointerManager::repositionCopyPointer(std::wstring_view pattern, std::vector<wchar_t>* mem_file) {

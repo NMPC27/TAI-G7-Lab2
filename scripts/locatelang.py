@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from color_code import ColorCode
 
 
-CACHED_INFORMATION_BIN_FORMAT = 'lang_{reference}.bin'
+CACHED_INFORMATION_BIN_FORMAT = '{reference}.bin'
 
 
 @dataclass
@@ -264,8 +264,8 @@ def main(
     target_identifier, target_cache_path, invalid_cache = setup_target_bins_cache(target_path, bins_folder, lang_args)
 
     # If the information streams haven't been calculated yet, do so now
-    # Assume the CACHED_INFORMATION_BIN_FORMAT has a 5-character prefix and 4-character suffix
-    cached_references = {cached_bin[5:-4] for cached_bin in os.listdir(target_cache_path) if cached_bin != '.info'}
+    # Assume the CACHED_INFORMATION_BIN_FORMAT has a 0-character prefix and 4-character suffix
+    cached_references = {cached_bin[:-4] for cached_bin in os.listdir(target_cache_path) if cached_bin != '.info'}
     not_cached_references = references if invalid_cache else (references - cached_references)
     n_not_cached_references = len(not_cached_references)
     if n_not_cached_references > 0:
@@ -293,10 +293,10 @@ def main(
     information_streams[0, :] = low_pass_filter(information_stream_row, low_pass_filter_dropoff)
     print('.', end='', flush=True)
 
-    data_to_filename = {'0': information_bins[0], '-1': 'unknown'}
+    data_to_filename = {'0': information_bins[0][:-4], '-1': '<unknown>'}
 
     for i, information_bin in enumerate(information_bins[1:]):
-        data_to_filename[str(i+1)] = information_bin
+        data_to_filename[str(i+1)] = information_bin[:-4]
         information_stream_row = np.fromfile(os.path.join(target_cache_path, information_bin), np.float64)
         information_streams[i+1, :] = low_pass_filter(information_stream_row, low_pass_filter_dropoff)
         print('.', end='', flush=True)
@@ -322,7 +322,7 @@ def main(
     print(' done!')
 
     print('Method 1 results:')
-    print('sections=', np.array_str(minimum_references_locations, max_line_width=np.inf), sep='')
+    print('sections=', list(minimum_references_locations), sep='')
     print('languages=', [data_to_filename[str(reference_i)] for reference_i in minimum_references], sep='')
 
     # print('Detecting language spans with method 2...', end='', flush=True)
