@@ -5,7 +5,7 @@
 **TODO**
 
 ## Requirements
-CMake >= 3.10
+CMake >= 3.10, C++ 17 standard compiler.
 
 ## Building
 

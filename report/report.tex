@@ -45,23 +45,275 @@ And finally, in \ref*{sec:conclusion} section, we will present the conclusions o
 \section{Methodology}
 \label{sec:methodology}
 
+For the development of the different components, we utilized different approaches.
+The lang model was written in C++, extending and improving the copy model program developed in the previous assignment.
+
+However, the find_lang and locate_lang scripts were developed in Python.
+These scripts essentially perform many independent runs of the lang model using different references, and parse the output as they desire.
+Since practically all of the heavy processing is performed by the lang model, we can afford the loss of performance that running a script in Python entails in turn for the much increased development simplicity.
+In fact, in practice we noticed that most of the execution time spent on these scripts is in the lang model, as the result processing in Python is relatively simple.
+
+Even then, the find_lang and locate_lang take too much time waiting for the results of the lang model.
+Therefore, to ease this large bottleneck, we added support for multiprocessing to both of these scripts.
+Since different lang models with different references can be run completely independently, without any need of interprocess communication, we can easily launch multiple processes.
+The ideal option would be to integrate multithreading directly into the lang model program itself, in C++, which allows greater memory efficiency as the target text doesn't have to be stored in memory multiple times, one for each process.
+However, we decided to simply opt for multiprocessing, since multithreading would heavily complicate the source code of the lang model, and also because multiprocessing provided a performance boost good enough for our purposes.
+This allowed us to dedicate more time in other areas of the assignment, such as improving the lang model and the scripts.
+
+In each of the following sections, we provide further development details on each of the components.
+
 \subsection{Lang model}
 \label{subsec:methodology_lang_model}
+
+The developed lang model is heavily based on the copy model built for the first assignment.
+The major change was adapting the existing program to train a copy model on a given reference text and only perform predictions on a given target text, instead of performing both training and predicting on a single message.
+This allows estimation of the number of bits required to compress the target text using copies from the reference text.
+% \/ too much info? not for methodology?
+If we use a reference text of a given language then we should get a better compression if the target text matches the provided language, since the same language patterns are to be expected, and so better copies can be made.
+The idea, then, is to identify the language of a given target text in terms of the language of the provided reference.
+If using multiple references, we can comparatively identify a language, by checking which of them provided a better compression of the target text.
+
+For the lang program, the following changes were done from the first assignment's copy model:
+\begin{itemize}
+    \item UTF-8 support:
+    We are using as references multiple kinds of languages.
+    As such, the ASCII encoding used in the first assignment's copy model is not enough to correctly represent the symbols of every language, since not all alphabets fit in that encoding.
+    The code worked perfectly for UTF-8 text, as it just effectively handled bytes.
+    However, it could cutoff symbols, and it was harder to debug and visually analyze the behaviour of the copying.
+    Therefore, we changed the code to support UTF-8 text, handling now symbols as wide chars instead of chars and strings as wstrings.
+    
+    \item Repeat-like wrapping for the past initialization:
+    Since we want to start training/copying since the very first symbol in the reference/target message, we need to consider some kind of context when at that symbol, i.e. we need to somehow train and test the model using the first $k$ symbols, even if we require $k$ symbols of previous context for each of them, which doesn't naturally exist.
+    For the first assignment, the strategy that we followed to solve this problem was to initiale this $k$-sized past with the most frequent symbol in the entire message.
+    This was an easy solution to implement, but it's much less appropriate when applied for the specific use case of this assignment.
+    Since we are dealing with natural language text, it doesn't make sense to incorporate $k$ repeated instances of a single letter, as that will definitely not occur for a reasonable value of $k$.
+    For the first assignment we mainly dealt with a chromossome sequence, but in this case this issue becomes more obvious.
+
+    Therefore, for the lang program we decided to initialize the $k$-sized past using the last $k$ symbols of the message.
+    That is, we perform a repeat-like wrapping on the text.
+    This way, we ensure the usage of a context in natural language for the first $k$ symbols.
+    The difference between both approaches is illustrated in figure \ref{fig:lang-new-past}
+
+    We have to handle the initialization of the past carefully for both the reference and target texts.
+    When training on the reference text, we initialize its past with its last $k$ symbols.
+    For the target text, we require some context for the first $k$ symbols before we start predicting.
+    Therefore, we initialize in the same way, using the last $k$ symbols of the reference text.
+    As such, it will be as if the target text was concatenated at the end of the reference text.
+    
+    \item Usage of \verb|string_view|:
+    In the previous assignment, we used strings to represent the $k$-sized context/window as we advanced on the text.
+    For the copy model itself, we had an hash table whose keys were these $k$-sized windows, i.e. $k$-sized strings.
+    This had the disadvantage that, effectively, the entire content of the message being trained on would be reflected in the keys of this hash table.
+    Since the message itself is already being stored in memory, the storage of keys in the hash table more than duplicates the amount of memory that the message's content ends up occupying.
+    Additionally, advancing through the text involved altering the current $k$-sized window by appending the new symbol at the end and removing the oldest symbol at the beginning.
+    This operation is not particularly efficient, especially when the string's content already exists and, in practice, all that is being done is the advancing of a pointer.
+
+    Therefore, we decided to switch these strings to string views.
+    String views just require a pointer to the beginning of a string and the string size.
+    This allows the lang program to be more memory efficient by simply pointing to the message content that is already in memory, from which copies are made.
+    Additionally, this enforces a fixed size for the strings, which for our case makes sense as the size is always a fixed value $k$.
+    
+    \item Usage of \verb|unordered_map|:
+    Our previous copy model made heavy use of the \verb|map| data structure.
+    However, this structure enforces order, which we don't take advantage of, and is not the approximation to an hash table that we desired.
+    % TODO: talk more about the differences between map and unordered_map?
+    As such, in the lang program we changed all uses of the \verb|map| structure to the \verb|unordered_map|, with noticeable improvement in performance.
+    
+    \item Removed ReadingStrategy:
+    In the first assignment, we initially planned to evaluate different approaches to reading the message from disk: either entirely into disk, or in binary directly from disk in case we could not load the entire message into memory.
+    We ended up not exploring different approaches other than storing all the content into memory, and so for the lang model we scrapped the abstraction of a reading strategy, incorporating the functionality that was in the respective classes directly into the copy model.
+\end{itemize}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{./images/lang_new_past.png}
+    \caption{A sample figure}
+    \label{fig:lang-new-past}
+\end{figure}
+
+% TODO: profiling results? show the bottleneck?
+
+\subsubsection{Finite-context model}
+\label{subsubsec:methodology_lang_model_fcm}
+
+
 
 \subsection{Find lang}
 \label{subsec:methodology_find_lang}
 
+% TODO: talk about confidence calculation
+
 \subsection{Locate lang}
 \label{subsec:methodology_locate_lang}
+
+\dots
+
+Contrary to the find_lang script, the locate_lang script caches the results of the lang model executions.
+This was done to speed up analysis since the processing of locate_lang itself contains many different parameters, and so we can avoid recalculating all necessary information in every run of the script if we only want to adjust the result processing and not the lang model parameters.
+This contrasts with the find_lang script, whose processing doesn't have any parameters, requiring only parameters to the lang model.
 
 \section{Results}
 \label{sec:results}
 
+To test the performance of the model and the scripts implemented in this assignment, we used a set of reference texts covering 20 different languages,
+these being: Bulgarian, Czech, Danish, German, Greek, English, Spanish, Estonian, Finnish, French, Hungarian, Italian, Lithuanian, Latvian, Dutch, Polish, Portuguese, Romanian, Slovak, Slovenian and Swedish.
+For the target texts, we used a set of texts in the same languages as the reference texts, plus a chinese text, but with different content, which were mainly used to test the find_lang script.
+And finally to test the locate_lang script, we combined the previous target files to a single file named \textit{all_languages.txt} and used it as a target text, and also used a small target text called \textit{dog.txt}
+which also contained some languages mixed in, including chinese, which is not present in our reference files.
+
 \subsection{Find lang}
 \label{subsec:results_find_lang}
 
+To obtain the accuracy of the find_lang script, we used the individual language texts and compared the result of the script with the actual language of the text.
+Two runs were performed for each language file, one which executed the lang model using its default parameters, such as using a frequency base distribution,
+and another one which used the finite context model, instead of the other two options for probability distributions, along with the other default parameters.
+
+For the first run, with default parameters, the script always correctly identified the language of the text, with an accuracy of 1.
+\begin{equation}
+    \label{eq:find_lang_default_accuracy}
+    Accuracy = \frac{correct}{total} = \frac{20}{20} = 1
+\end{equation}
+
+For the second run, with the finite context model, the script also correctly identified the language for all the texts used, with an accuracy of 1.
+\begin{equation}
+    \label{eq:find_lang_finite_context_accuracy}
+    Accuracy = \frac{correct}{total} = \frac{20}{20} = 1
+\end{equation}
+
+To differentiate between the two approaches, we also calculated a confidence value. The way this value is calculated is through the equation \ref{eq:find_lang_confidence}.
+
+The following tables show the confidence results of the find_lang script for the default parameters and the finite context model, respectively.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        Language & Confidence \\
+        \hline
+        Bulgarian & 99.2\% \\
+        Czech & 59.2\% \\
+        Danish & 58.2\% \\
+        German & 60.6\% \\
+        Greek & 98.9\% \\
+        English & 50.5\% \\
+        Spanish & 46.4\% \\
+        Estonian & 53.5\% \\
+        Finnish & 41.2\% \\
+        French & 45.8\% \\
+        Hungarian & 67.1\% \\
+        Italian & 45.1\% \\
+        Lithuanian & 64.7\% \\
+        Latvian & 74.8\% \\
+        Dutch & 35.9\% \\
+        Polish & 72.2\% \\
+        Portuguese & 44.7\% \\
+        Romanian & 74.6\% \\
+        Slovak & 36.1\% \\
+        Slovenian & 30.2\% \\
+        Swedish & 59.8\% \\
+        \hline
+    \end{tabular}
+    \caption{Confidence results for the find_lang script with default parameters}
+    \label{tab:find_lang_default_confidence}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        Language & Confidence \\
+        \hline
+        Bulgarian & 93.1\% \\
+        Czech & 77.3\% \\
+        Danish & 85.5\% \\
+        German & 92.1\% \\
+        Greek & 93.9\% \\
+        English & 92.3\% \\
+        Spanish & 86.4\% \\
+        Estonian & 90.4\% \\
+        Finnish & 89.7\% \\
+        French & 91.7\% \\
+        Hungarian & 92.9\% \\
+        Italian & 90.2\% \\
+        Lithuanian & 90.4\% \\
+        Latvian & 89.8\% \\
+        Dutch & 91.1\% \\
+        Polish & 89.4\% \\
+        Portuguese & 82.7\% \\
+        Romanian & 91.2\% \\
+        Slovak & 77.8\% \\
+        Slovenian & 86.7\% \\
+        Swedish & 89.2\% \\
+        \hline
+    \end{tabular}
+    \caption{Confidence results for the find_lang script with finite context model}
+    \label{tab:find_lang_finite_context_confidence}
+\end{table}
+
+
+
 \subsection{Locate lang}
 \label{subsec:results_locate_lang}
+
+\subsubsection{Base probability distribution - Uniform distribution}
+\label{subsubsec:results_locate_lang_uniform_distribution}
+
+% CUNHA
+By using this approach, we can see very clearly the different languages in figure \ref{fig:all_languages_p_u} of file "all_languages.txt",
+because the entropy of the right language is much lower than all the others.
+But by using this approach, we have more difficulty detecting unknown languages (languages that are not in the references).
+because even if we define the static threshold at the lowest entropy point of all the right languages,
+it will also detect the last chunk of text as French, which is wrong, the last chunk of text in the file is Chinese.
+
+
+For "all_languages_random.txt", we can distinguish the languages in the figure \ref{fig:all_languages_random_p_u}.
+We can see the valleys very clearly and infer the language using that information.
+The same difficulty is seen in this figure: we can't define a static threshold without affecting some of the real languages.
+(We can't draw a horizontal line that is above all the reference languages and under the Chinese one.)
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages/-p_u.png}
+    \caption{Entropy of each language for "all_languages.txt"}
+    \label{fig:all_languages_p_u}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-p_u.png}
+    \caption{Entropy of each language for "all_languages_random.txt"}
+    \label{fig:all_languages_random_p_u}
+\end{figure}
+
+\subsubsection{Base probability distribution - Frequency distribution}
+\label{subsubsec:results_locate_lang_frequency_distribution}
+
+\subsubsection{Base probability distribution - First-order finite context model}
+\label{subsubsec:results_locate_lang_first_order_fcm}
+
+\subsubsection{Copy pointer repositioning - Oldest pointer first}
+\label{subsubsec:results_locate_lang_oldest_pointer_first}
+
+\subsubsection{Copy pointer repositioning - Newest pointer first}
+\label{subsubsec:results_locate_lang_newest_pointer_first}
+
+\subsubsection{Copy pointer repositioning - Most common prediction}
+\label{subsubsec:results_locate_lang_most_common_prediction}
+
+\subsubsection{Copy pointer repositioning - Most common prediction bounded}
+\label{subsubsec:results_locate_lang_most_common_prediction_bounded}
+
+\subsubsection{Copy pointer repositioning - Static threshold}
+\label{subsubsec:results_locate_lang_static_threshold}
+
+\subsubsection{Copy pointer repositioning - Successive fails threshold}
+\label{subsubsec:results_locate_lang_successive_fails_threshold}
+
+\subsubsection{Copy pointer repositioning - Rate of change threshold}
+\label{subsubsec:results_locate_lang_rate_of_change_threshold}
+
+
+
 
 \section{Conclusion}
 \label{sec:conclusion}

@@ -1,0 +1,104 @@
+bg.txt:
+    real: Bulgarian
+    predicted: Bulgarian
+    condidence: 99.2%
+
+cs.txt:
+    real: Czech
+    predicted: Czech
+    condidence: 59.2%
+
+da.txt:
+    real: Danish
+    predicted: Danish
+    condidence: 58.2%
+
+de.txt:
+    real: German
+    predicted: German
+    condidence: 60.6%
+
+el.txt:
+    real: Greek
+    predicted: Greek
+    condidence: 98.9%
+
+en.txt:
+    real: English
+    predicted: English
+    condidence: 50.5%
+
+es.txt:
+    real: Spanish
+    predicted: Spanish
+    condidence: 46.4%
+
+et.txt:
+    real: Estonian
+    predicted: Estonian
+    condidence: 53.5%
+
+fi.txt:
+    real: Finnish
+    predicted: Finnish
+    condidence: 41.2%
+
+fr.txt:
+    real: French
+    predicted: French
+    condidence: 45.8%
+
+hu.txt:
+    real: Hungarian
+    predicted: Hungarian
+    condidence: 67.1%
+
+it.txt:
+    real: Italian
+    predicted: Italian
+    condidence: 45.1%
+
+lt.txt:
+    real: Lithuanian
+    predicted: Lithuanian
+    condidence: 64.7%
+
+lv.txt:
+    real: Latvian
+    predicted: Latvian
+    condidence: 74.8%
+
+nl.txt:
+    real: Dutch
+    predicted: Dutch
+    condidence: 35.9%
+
+pl.txt:
+    real: Polish
+    predicted: Polish
+    condidence: 72.2%
+
+pt.txt:
+    real: Portuguese
+    predicted: Portuguese
+    condidence: 44.7%
+
+ro.txt:
+    real: Romanian
+    predicted: Romanian
+    condidence: 74.6%
+
+sk.txt:
+    real: Slovak
+    predicted: Slovak
+    condidence: 36.1%
+
+sl.txt:
+    real: Slovenian
+    predicted: Slovenian
+    condidence: 30.2%
+
+sv.txt:
+    real: Swedish
+    predicted: Swedish
+    condidence: 59.8%

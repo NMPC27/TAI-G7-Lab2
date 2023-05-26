@@ -1,6 +1,7 @@
 import os
 import argparse
 import asyncio
+import math
 from typing import List, Dict
 
 
@@ -85,8 +86,10 @@ def main(
     
     informations = asyncio.run(calculate_total_information_multiprocess(target_path, lang_args, references, references_folder, n_processes, quit_at_error))
 
+    confidence = math.pow(1 - (min(informations.values()) / sorted(informations.values())[1])**3, 1 / 3)
+
     detected_language, detected_language_information = min(informations.items(), key=lambda t: t[1])
-    print(f'Detected language of reference \'{detected_language}\', compressing the target down to {detected_language_information} bits.')
+    print(f'Detected language of reference \'{detected_language}\', compressing the target down to {detected_language_information} bits, with {confidence:%} confidence.')
 
 
 if __name__ == '__main__':
@@ -104,7 +107,7 @@ Example: findlang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, help='path to the target text whose language will be estimated')
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
     parser.add_argument('-p', '--processes', type=int, default=1, help='maximum number of language analysis processes to run in parallel' + default_str)
-    parser.add_argument('--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
+    parser.add_argument('--ignore-errors', action='store_true', help='don\'t quit if runtime errors from \'lang\' are suspected' + default_str)
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 
     args = parser.parse_args()
