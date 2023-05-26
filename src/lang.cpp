@@ -331,7 +331,7 @@ int main(int argc, char** argv) {
     if (verbose_mode == VerboseMode::machine) {
         // This is the number of characters in the target file only
         int total_number_of_characters = 0;
-        for(map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+        for(unordered_map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
             total_number_of_characters += model.countOf(it->first);
         }
 
@@ -421,7 +421,7 @@ int main(int argc, char** argv) {
         }
 
         int sum=0;
-        for (map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
+        for (unordered_map<wchar_t, double>::iterator it = model.probability_distribution.begin(); it != model.probability_distribution.end(); ++it) {
             sum+=model.countOf(it->first);
         }
         cout << "Mean amount of information of a symbol: " << information_sum/sum << " bits" << endl;
@@ -436,7 +436,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, map<wchar_t, double> base_distribution) {
+void outputProbabilityDistributionHuman(wchar_t prediction, wchar_t actual, double hit_probability, unordered_map<wchar_t, double> base_distribution) {
     cout << "Prediction: '" << prediction << "', Actual: '" << actual << "', " << hit_probability << "\t" << " | Distribution: ";
     for (auto& pair : base_distribution) {
         cout << "('" << pair.first << "', " << pair.second << ") ";

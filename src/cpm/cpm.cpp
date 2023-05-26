@@ -189,7 +189,7 @@ double CopyModel::calculateProbability(int hits, int misses) {
     return (hits + alpha) / (hits + misses + 2 * alpha);
 }
 
-void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute, std::map<wchar_t, double> distribution) {
+void CopyModel::setRemainderProbabilities(wchar_t exception, double probability_to_distribute, std::unordered_map<wchar_t, double> distribution) {
     double base_remainder_total = 0.0;
     for (auto& pair : distribution)
         if (pair.first != exception)

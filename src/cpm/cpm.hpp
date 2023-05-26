@@ -1,6 +1,5 @@
 #include <vector>
 #include <string>
-#include <map>
 #include <unordered_map>
 #include <cwchar>
 #include <string_view>
@@ -179,7 +178,7 @@ public:
     void initializeOnTarget();
 
     // Read-only values. Always overwritten when calling predictNext()
-    std::map<wchar_t, double> probability_distribution;
+    std::unordered_map<wchar_t, double> probability_distribution;
     double hit_probability = 0;
     wchar_t prediction = '\0';
     wchar_t actual = '\0';
@@ -195,7 +194,7 @@ private:
  * @brief Set the Remainder Probabilities of the probability distribution after the prediction.
  * 
  */
-    void setRemainderProbabilities(wchar_t, double, std::map<wchar_t, double>);
+    void setRemainderProbabilities(wchar_t, double, std::unordered_map<wchar_t, double>);
 /**
  * @brief Verifies if the hit probability surpasses any threshold, used when the user defined more than one type of threshold for copy pointer changing.
  * 
