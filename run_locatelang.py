@@ -4,20 +4,30 @@ import shutil
 lista = [
 #    '-p f',
 #    '-p u',
-#    '-p c:??',
 #    '-r m',
 #    '-r c:100',
-    '-r o',
-    '-r n',
+#    '-r o',
+#    '-r n',
 #    '-t n:0.5',
 #    '-t f:9',
 #    '-t c:0.01',
-
+#    '-p c:1:3',
+#    '-p c:10:3',
+#    '-p c:100:3',
+    '-p c:1:3',
+    '-p c:1:6',
+#    '-p c:1:9',
 ]
 
-command = ['python3', 'scripts/locatelang.py', '-t', 'example/target/all_languages_random.txt', '-p', '6', '-f', '1000','--plot', '--save-result']
+file_target="all_languages_random"
 
-shutil.rmtree("scripts/input/all_languages_random")
+command = ['python3', 'scripts/locatelang.py', '-t', 'example/target/'+file_target+".txt", '-p', '6', '-f', '1000','--plot', '--save-result']
+
+try:
+    shutil.rmtree("scripts/input/"+file_target)
+except:
+    pass
+
 for arg in lista:
     out=arg.replace(' ', '_')
     print("Running: " + arg)
@@ -40,5 +50,5 @@ for arg in lista:
         print(result.stderr)
         print(result.stdout)
 
-    shutil.rmtree("scripts/input/all_languages_random")
+    shutil.rmtree("scripts/input/"+file_target)
 

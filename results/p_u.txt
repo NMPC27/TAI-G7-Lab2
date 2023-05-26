@@ -1,3 +1,0 @@
-Method 1 results:
-sections=[0]
-languages=['unknown']
