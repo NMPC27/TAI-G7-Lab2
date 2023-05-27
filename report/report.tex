@@ -52,6 +52,7 @@ However, the find_lang and locate_lang scripts were developed in Python.
 These scripts essentially perform many independent runs of the lang model using different references, and parse the output as they desire.
 Since practically all of the heavy processing is performed by the lang model, we can afford the loss of performance that running a script in Python entails in turn for the much increased development simplicity.
 In fact, in practice we noticed that most of the execution time spent on these scripts is in the lang model, as the result processing in Python is relatively simple.
+For both scripts, parameters of the lang model can be specified.
 
 Even then, the find_lang and locate_lang take too much time waiting for the results of the lang model.
 Therefore, to ease this large bottleneck, we added support for multiprocessing to both of these scripts.
@@ -94,7 +95,7 @@ For the lang program, the following changes were done from the first assignment'
     Therefore, for the lang program we decided to initialize the $k$-sized past using the last $k$ symbols of the message.
     That is, we perform a repeat-like wrapping on the text.
     This way, we ensure the usage of a context in natural language for the first $k$ symbols.
-    The difference between both approaches is illustrated in figure \ref{fig:lang-new-past}
+    The difference between both approaches is illustrated in figure \ref{fig:lang_new_past}
 
     We have to handle the initialization of the past carefully for both the reference and target texts (note that they are in different character arrays in memory).
     When training on the reference text, we initialize its past with its last $k$ symbols.
@@ -130,7 +131,7 @@ For the lang program, the following changes were done from the first assignment'
     \centering
     \includegraphics[width=0.95\textwidth]{./images/lang_new_past.png}
     \caption{Illustration of the new past initialization, with the difference between the previous version (above) and the new version (below). The english reference text is used as an example.}
-    \label{fig:lang-new-past}
+    \label{fig:lang_new_past}
 \end{figure}
 
 Other than these changes, various bugfixes and slight optimizations were done on the previous copy model.
@@ -155,10 +156,10 @@ As such, \verb|NextOldestCopyPointerManager| is the only manager whose behaviour
 \label{subsubsec:methodology_lang_model_verbose}
 
 The lang program was required to output the total number of bits estimated to be necessary to compress the target text based on the reference text.
-To simplify output analysis by the find_lang script, we added the minimal verbose mode specified with the parameter \verb|-o|, which simply prints to standard output nothing more than the total number of bits required for compression.
+To simplify output analysis by the find_lang script, we added the minimal verbose mode specified with the parameter \verb|-v o|, which simply prints to standard output nothing more than the total number of bits required for compression.
 
 Additionally, for the locate_lang script, we needed to know what was the reported information content in bits for each symbol in the message, to correctly identify in which language was each text segment.
-Therefore, we modified the previous ``machine'' verbose mode, specified with the parameter \verb|-m|, which used to print the whole probability distribution in CSV format to standard output.
+Therefore, we modified the previous ``machine'' verbose mode, specified with the parameter \verb|-v m|, which used to print the whole probability distribution in CSV format to standard output.
 This output was previously saved to disk using shell redirection, and since the CSV format was very wasteful in terms of space a lot of disk memory was necessary for these files.
 
 Since now we are only concerned with the probability of the actual symbol in the message, we only need one of those values of the probability distribution at every step.
@@ -167,7 +168,7 @@ This allows for a densely-packed representation of the probability values over t
 We can then load these values in a highly efficient manner from the locate_lang script using the NumPy library.
 Do note that these these floating-point values, declared as \verb|double|, are assumed to occupy 64 bits.
 
-Since the new ``machine'' verbose mode outputs the probabilities to a binary file, we added the possibility to declare to which file they are written, by specifying it as an ``option parameter'': \verb|-m:X|, where \verb|X| is the path of the file.
+Since the new ``machine'' verbose mode outputs the probabilities to a binary file, we added the possibility to declare to which file they are written, by specifying it as an ``option parameter'': \verb|-v m:X|, where \verb|X| is the path of the file.
 If only \verb|-m| is passed, then the output is written to ``lang.bin'' by default.
 If the specified file already exists, then a prompt asking for ovewrite permission is presented.
 
@@ -239,11 +240,43 @@ We opted for this formula since it has very accelerated growth in the beginning 
 \subsection{Locate lang}
 \label{subsec:methodology_locate_lang}
 
-\dots
+The locate_lang script is comparatively more complex than find_lang.
+Instead of identifying the language of the target overall, it attempts to identify which segments of text are written in one of the languages from the bank of references.
+Additionally, locate_lang can also identify segments of text on which it can't assign a language from the references, and as such takes into account the absolute compression performance of the lang program.
+
+To do this, analysis is done on the reported information content at each position in the target text.
+We require this data for each reference.
+This is obtained by running the lang program for each reference using the machine verbose mode \verb|-v m|, which outputs all this information into a binary file in disk.
+After all these results are saved, they are read from disk and analysis is performed by the script.
 
 Contrary to the find_lang script, the locate_lang script caches the results of the lang model executions.
 This was done to speed up analysis since the processing of locate_lang itself contains many different parameters, and so we can avoid recalculating all necessary information in every run of the script if we only want to adjust the result processing and not the lang model parameters.
 This contrasts with the find_lang script, whose processing doesn't have any parameters, requiring only parameters to the lang model.
+
+The information at each target step for every reference is saved in a NumPy matrix, with a row for each reference and a column for each position in the target text.
+
+Since the information at the rows is very erratic and has many spikes due to the behaviour of the copy model, where copies are only done sometimes and not for very long, the data at each row is filtered using a low-pass filter to smoothen it.
+The low-pass filter was implemented using the Fast Fourier Transform (FFT).
+The idea was to get the frequencies that compose the data, downscale the higher frequencies, and then rebuild the signal using the Inverse Fast Fourier Transform (IFFT).
+For downscaling, we used the exponential function $e^{-\beta|x|}$, where $x$ is the frequency and $\beta$ is the frequency dropoff, which dictates how strongly should the higher frequencies be filtered.
+This function is centered at $x=0$, which allows positive and negative frequencies close to 0 (the lowest) to have an higher multiplier, but the farther they get from 0 the lower the multiplier is.
+The downscaling is therefore implemented by multipliying the exponential downscaling function with the amplitudes of the frequencies of the data.
+An example of the frequencies composing the target data and the corresponding downscaling function is presented in figure \ref{fig:low_pass_filter}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{./images/low_pass_filter.png}
+    \caption{Example of the frequencies composing the compressed information of target ``all_languages_random.txt'' trained on the greek reference, with default lang model parameters and finite-context distribution with $k_f=6$. The exponential downscaling function applied to the frequencies is also shown on the right plot.}
+    \label{fig:low_pass_filter}
+\end{figure}
+
+% TODO: thresholds
+
+% TODO: locate_lang argument list
+In the end, the following processing arguments are accepted:
+\begin{itemize}
+    \item 
+\end{itemize}
 
 \section{Results}
 \label{sec:results}
