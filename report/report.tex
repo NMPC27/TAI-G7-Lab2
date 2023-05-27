@@ -60,6 +60,8 @@ The ideal option would be to integrate multithreading directly into the lang mod
 However, we decided to simply opt for multiprocessing, since multithreading would heavily complicate the source code of the lang model, and also because multiprocessing provided a performance boost good enough for our purposes.
 This allowed us to dedicate more time in other areas of the assignment, such as improving the lang model and the scripts.
 
+If, while performing multiprocessing, any of the processes fails for some reason, then the script by default exits outputting the obtained error from the failed process.
+
 In each of the following sections, we provide further development details on each of the components.
 
 \subsection{Lang model}
@@ -94,7 +96,7 @@ For the lang program, the following changes were done from the first assignment'
     This way, we ensure the usage of a context in natural language for the first $k$ symbols.
     The difference between both approaches is illustrated in figure \ref{fig:lang-new-past}
 
-    We have to handle the initialization of the past carefully for both the reference and target texts.
+    We have to handle the initialization of the past carefully for both the reference and target texts (note that they are in different character arrays in memory).
     When training on the reference text, we initialize its past with its last $k$ symbols.
     For the target text, we require some context for the first $k$ symbols before we start predicting.
     Therefore, we initialize in the same way, using the last $k$ symbols of the reference text.
@@ -121,25 +123,97 @@ For the lang program, the following changes were done from the first assignment'
     
     \item Removed ReadingStrategy:
     In the first assignment, we initially planned to evaluate different approaches to reading the message from disk: either entirely into disk, or in binary directly from disk in case we could not load the entire message into memory.
-    We ended up not exploring different approaches other than storing all the content into memory, and so for the lang model we scrapped the abstraction of a reading strategy, incorporating the functionality that was in the respective classes directly into the copy model.
+    We ended up not exploring different approaches other than storing all the content into memory, and so for the lang model we scrapped the abstraction of a reading strategy, incorporating the functionality that was in the respective classes directly into the lang copy model.
 \end{itemize}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.95\textwidth]{./images/lang_new_past.png}
-    \caption{A sample figure}
+    \caption{Illustration of the new past initialization, with the difference between the previous version (above) and the new version (below). The english reference text is used as an example.}
     \label{fig:lang-new-past}
 \end{figure}
 
+Other than these changes, various bugfixes and slight optimizations were done on the previous copy model.
+Due to the new approach of training on independent reference and target texts, the code had to be restructured and more responsibilities separated to ensure only training occurs on the reference and prediction is reserved only for the target.
+
+For instance, after training on the reference we have an hash table of the counts of each symbol in the text.
+These counts are required by the probability distributions, more specifically the \verb|FrequencyDistribution|.
+However, the probability distributions have to take into account the \emph{target's} alphabet, not the reference's.
+Therefore, after performing the initial pass over the target text to determine its alphabet, these counts are updated to remove any symbols that did not appear in the target text and include those that appeared in the target text but not in the reference.
+These new symbols, that didn't previously have counts, will have their counts initialized with 1 to avoid reporting an infinite amount of information for them.
+Do note that, after passing over the target text, the counts of the symbols both in the reference text and target text are not updated, i.e. only counts actually done on the reference text are used.
+This is done because it doesn't make much sense to include the symbol counts on the target text when the objective of the program is to compress solely based on a model trained on a reference text.
+Additionally, we mainly want to use this program to compare compression of one same target text using many different references, and so it's not relevant to include the target symbol counts since they would be the same between all runs.
+
+Another point worth making is that most copy pointer managers, which are the copy model components responsible for determining which copy pointer to use at each context, do not perform differently every time the same context is seen in the target text.
+This is because the array of copy pointers to choose from does not change while traversing the target text anymore, only during training on the reference.
+As such, \verb|NextOldestCopyPointerManager| is the only manager whose behaviour changes for a given context while predicting on the target.
+
 % TODO: profiling results? show the bottleneck?
+
+\subsubsection{Verbose modes}
+\label{subsubsec:methodology_lang_model_verbose}
+
+The lang program was required to output the total number of bits estimated to be necessary to compress the target text based on the reference text.
+To simplify output analysis by the find_lang script, we added the minimal verbose mode specified with the parameter \verb|-o|, which simply prints to standard output nothing more than the total number of bits required for compression.
+
+Additionally, for the locate_lang script, we needed to know what was the reported information content in bits for each symbol in the message, to correctly identify in which language was each text segment.
+Therefore, we modified the previous ``machine'' verbose mode, specified with the parameter \verb|-m|, which used to print the whole probability distribution in CSV format to standard output.
+This output was previously saved to disk using shell redirection, and since the CSV format was very wasteful in terms of space a lot of disk memory was necessary for these files.
+
+Since now we are only concerned with the probability of the actual symbol in the message, we only need one of those values of the probability distribution at every step.
+As such, we opted to instead of printing the floating-point probability values to standard output, to write them directly in sequence to a file in binary format.
+This allows for a densely-packed representation of the probability values over the message since no newlines or separators are used and the values are written in their full binary content instead of a character string representation in digits each occupying a byte, saving tremendously in space when compared with the previous assignment's approach.
+We can then load these values in a highly efficient manner from the locate_lang script using the NumPy library.
+Do note that these these floating-point values, declared as \verb|double|, are assumed to occupy 64 bits.
+
+Since the new ``machine'' verbose mode outputs the probabilities to a binary file, we added the possibility to declare to which file they are written, by specifying it as an ``option parameter'': \verb|-m:X|, where \verb|X| is the path of the file.
+If only \verb|-m| is passed, then the output is written to ``lang.bin'' by default.
+If the specified file already exists, then a prompt asking for ovewrite permission is presented.
 
 \subsubsection{Finite-context model}
 \label{subsubsec:methodology_lang_model_fcm}
 
+We explored the possibility of using a finite-context model, or discrete time Markov chain, as the default distribution to report for the symbols that we did not predict at each step.
+In this model, we try to estimate the probability that a symbol occurs after a given $k_f$-sized context by counting occurrences of the symbol after that context in the past.
+We allowed this model to have an arbitrary order, i.e. the size $k_f$ of the context used.
+We can specify a $k_f \leq k$, where $k$ is the size of the context in the copy model itself.
 
+Since we already had a family of classes representing the reported probability distributions, as subclasses of the \verb|BaseDistribution| class, then we created the finite-context model as a subclass as well, named \verb|FiniteContextDistribution|.
+Implementation involved keeping track of counts of symbols after $k_f$-sized subcontexts we saw while training on the reference text.
+For that, we used an hash table with the context as the keys and the symbol counts as the values.
+The symbol counts themselves were also implemented using hash tables, with the symbols as the keys and the counts as the values.
+These tables are updated at every training step on the reference.
+
+After training, we initialize the internal distribution variable, which contains the probability distribution that is reported at each step, with zeros for each symbol of the target alphabet.
+Then, for every hash table of counts in the hash table of subcontexts, we remove all the counts of the symbols that are not in the alphabet, since they won't be used.
+
+Then, at every single prediction step, we update the internal distribution variable to store the probabilities of every symbol based on the obtained symbol counts for the current $k_f$-sized subcontext.
+The probabilities are obtained using the following formula:
+
+$$
+P(e|c) = \frac{N(e|c) + \alpha}{\sum_{s \in \Sigma}{N(s|c)} + \alpha |\Sigma|},
+$$
+
+where $e$ is the symbol of which we want to calculate the probability of occurring, $c$ is the subcontext used, $\Sigma$ is the target alphabet, $N(x|y)$ is the count of symbol $x$ after sub $y$ and $\alpha$ is a smoothing parameter to avoid probabilities of 0.
+
+In case no counts were obtained for the current $k_f$-sized subcontext, then all counts are treated as 0 and the reported distribution is a uniform distribution.
+
+This implementation requires recalculating, at each prediction step, the probabilities of all symbols at each subcontext found in the target text.
+If we found the same subcontext multiple times, then the distribution would be recalculated at each one of them.
+It can be argued that this is wasteful, and that the distribution can be cached somehow.
+In fact, we attempted to calculate all probability distributions for each subcontext in the main hash table beforehand, instead of keeping track of the counts.
+However, this is extremely expensive in terms of memory usage, since normally we only keep counts of a few symbols for each subcontext, but with this approach we need to store counts for all symbols of the target alphabet.
+Even after trying to use arrays instead of hash tables to store the probability values, the memory usage was too high (upwards of gigabytes).
+Surprisingly, as well, the performance didn't even increase.
+Since the target text was usually smaller than the reference text, most of the work was being performed in the preemptive calculation of the probability distributions, most of which were never going to be queried for.
+As such, we opted for the lazy calculation of the probability distributions, since in practice the performance footprint was not very noticeable and the memory usage was much less.
 
 \subsection{Find lang}
 \label{subsec:methodology_find_lang}
+
+The find lang script was required to, given a target text and a bank of references, determine in which language it was written.
+This is done by running the lang program for each combination of the target text and a reference text from the bank, getting the reported total information content in bits using the minimal verbose mode \verb|-v o|.
 
 % TODO: talk about confidence calculation
 
@@ -154,6 +228,8 @@ This contrasts with the find_lang script, whose processing doesn't have any para
 
 \section{Results}
 \label{sec:results}
+
+% TODO: talk about the compression results as well: why is the number of reported total bits and mean bits per symbol so low? It's probably because we are not accounting for the space required to store the reference text, which was necessary to compress the target to an absurdly low number of bits.
 
 To test the performance of the model and the scripts implemented in this assignment, we used a set of reference texts covering 20 different languages,
 these being: Bulgarian, Czech, Danish, German, Greek, English, Spanish, Estonian, Finnish, French, Hungarian, Italian, Lithuanian, Latvian, Dutch, Polish, Portuguese, Romanian, Slovak, Slovenian and Swedish.

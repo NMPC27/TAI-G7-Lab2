@@ -61,7 +61,6 @@ int main(int argc, char** argv) {
              * m: machine
              * p: progress
             */ 
-            // TODO: possibly refactor this, it is useful to combine functionalities from different modes
             case 'v':
                 switch (optarg[0]) {
                     case 'h':
@@ -305,10 +304,10 @@ int main(int argc, char** argv) {
         }
     }
 
-    // First pass of the file to get the alphabet and compute the base distribution
+    // First pass of the file to get the alphabet counts
     model.firstPassOverReference(reference);
 
-    // Initialize the first k-pattern with the reference's end
+    // Initialize and reposition the current pattern window to point to the reference
     model.initializeOnReference();
 
     // Train on the reference text
@@ -318,10 +317,10 @@ int main(int argc, char** argv) {
         model.advance();
     }
 
-    // Train on the target text
+    // Get the target's alphabet and initialize the probability distribution
     model.firstPassOverTarget(target);
 
-    // Reposition the current pattern view (since the file in memory increased in size, it may be in another place)
+    // Initialize and reposition the current pattern window to point to the target
     model.initializeOnTarget();
 
     // Using the target's alphabet
