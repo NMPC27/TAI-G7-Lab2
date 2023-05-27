@@ -213,9 +213,28 @@ As such, we opted for the lazy calculation of the probability distributions, sin
 \label{subsec:methodology_find_lang}
 
 The find lang script was required to, given a target text and a bank of references, determine in which language it was written.
-This is done by running the lang program for each combination of the target text and a reference text from the bank, getting the reported total information content in bits using the minimal verbose mode \verb|-v o|.
+This is done by running the lang program for each combination of the target text and a reference text from the bank, getting the reported total information content in bits using the minimal verbose mode \verb|-v o|, and reporting the reference text whose reported value was the lowest.
 
-% TODO: talk about confidence calculation
+The script doesn't take into account its overall performance to, for example, indicate that it doesn't know which language the target text is in, i.e. it always says that the target text is one of the supplied references' languages.
+
+We also added a metric to the script's output, called \textit{confidence}.
+Confidence dictates how sure is the script that the reported language is actually the target text's language.
+This metric only takes into account the relative performance of the lang program with the different references, and not the performance of the lang program overall.
+Confidence simply measures how confused the script is in the reported language.
+We essentially compare the lowest reported information value with the second lowest information value.
+If these values are very different between each other, then we can be more sure that the language that reported the minimum is actually the target text's language (within the known references at least).
+However, if they are very similar, then there is confusion between at least two languages, and we can't be very sure that the reported minimum is certainly the target language (this can happen, for instance, for very similar languages).
+
+The confidence value $C$ is calculated using the following formula:
+
+$$
+C = \sqrt[3]{1 - \frac{m_2}{m_1}^3},
+$$
+
+where $m_k$ is the $k$-th minimum information value and $0 \leq C < 1$.
+This formula, for instance, reports a confidence of $\approx 95.65\%$ if the second minimum is twice as large as the first minimum, $\approx 88.95\%$ if the second minimum is $50\%$ larger than the first minimum, but only $\approx 62.89\%$ if the second minimum is $10\%$ larger than the absolute minimum.
+If the reported information is the same between both minimums, then confidence is $0\%$.
+We opted for this formula since it has very accelerated growth in the beginning ($m_2$ slightly larger than $m_1$), allowing us to assert that as long as a small enough distance between both minimums is ensured, then we can be confident about the reported language.
 
 \subsection{Locate lang}
 \label{subsec:methodology_locate_lang}
@@ -260,6 +279,7 @@ To differentiate between the two approaches, we also calculated a confidence val
 
 The following tables show the confidence results of the find_lang script for the default parameters and the finite context model, respectively.
 
+% TODO: what about chinese?
 \begin{table}[H]
     \centering
     \begin{tabular}{|c|c|}
