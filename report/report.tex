@@ -321,7 +321,7 @@ which also contained some languages mixed in, including chinese, which is not pr
 
 To obtain the accuracy of the find_lang script, we used the individual language texts and compared the result of the script with the actual language of the text.
 Two runs were performed for each language file, one which executed the lang model using its default parameters, such as using a frequency base distribution,
-and another one which used the finite context model, instead of the other two options for probability distributions, along with the other default parameters.
+and another one which used the finite-context model, instead of the other two options for probability distributions, along with the other default parameters.
 
 For the first run, with default parameters, the script always correctly identified the language of the text, with an accuracy of 1.
 \begin{equation}
@@ -329,15 +329,17 @@ For the first run, with default parameters, the script always correctly identifi
     Accuracy = \frac{correct}{total} = \frac{20}{20} = 1
 \end{equation}
 
-For the second run, with the finite context model, the script also correctly identified the language for all the texts used, with an accuracy of 1.
+For the second run, with the finite-context model, the script also correctly identified the language for all the texts used, with an accuracy of 1.
 \begin{equation}
     \label{eq:find_lang_finite_context_accuracy}
     Accuracy = \frac{correct}{total} = \frac{20}{20} = 1
 \end{equation}
 
-To differentiate between the two approaches, we also calculated a confidence value. The way this value is calculated is through the equation \ref{eq:find_lang_confidence}.
+To differentiate between the two approaches, we also calculated a confidence value. The way this value is calculated is through equation \ref{eq:find_lang_confidence}.
 
-The following tables show the confidence results of the find_lang script for the default parameters and the finite context model, respectively.
+The following tables show the confidence results of the find_lang script for the default parameters and the finite-context model, respectively.
+
+% TODO: add chinese?
 
 \begin{table}[H]
     \centering
@@ -401,12 +403,12 @@ The following tables show the confidence results of the find_lang script for the
         Swedish & 89.2\% \\
         \hline
     \end{tabular}
-    \caption{Confidence results for the find_lang script with finite context model}
+    \caption{Confidence results for the find_lang script with finite-context model}
     \label{tab:find_lang_finite_context_confidence}
 \end{table}
 
 By comparing the confidence results of the two approaches, we can see that although both approaches correctly identified the language of the text,
-the default parameters approach had a much lower confidence value than the finite context model approach, some of them being even lower than 50\%.
+the default parameters approach had a much lower confidence value than the finite-context model approach, some of them being even lower than 50\%.
 
 The reason for this is that the default parameters approach uses a frequency base distribution, which is not very good at identifying the language of a text,
 because it does not take into account the order of the characters in the text, which is very important for some languages.
@@ -416,10 +418,10 @@ Due to the fact that the script always returns a language, the way to evaluate t
 
 For the default parameters approach, the script returned the language as hungarian, with a confidence value of 37.7\%, which is low, but not low enough considering the other confidence values and
 the fact that chinese has a completely different alphabet than any of the other languages present in the reference files.
-In contrast, the finite context model approach returned the language as swedish, but with a confidence value of 0.0\%, which is the lowest possible value, and the correct result
+In contrast, the finite-context model approach returned the language as swedish, but with a confidence value of 0.0\%, which is the lowest possible value, and the correct result
 for a language that is not in the reference files.
 
-With these results we can conclude that the finite context model approach is better than the default parameters approach and has a really good accuracy and confidence value.
+With these results we can conclude that the finite-context model approach is better than the default parameters approach and has a really good accuracy and confidence value.
 
 \subsection{Locate lang}
 \label{subsec:results_locate_lang}
@@ -487,7 +489,7 @@ due to the constant change of languages.
     \label{fig:all_languages_random_p_f}
 \end{figure}
 
-\subsubsection{Base probability distribution - First-order finite context model}
+\subsubsection{Base probability distribution - Finite-context model}
 \label{subsubsec:results_locate_lang_first_order_fcm}
 
 To test this approach, various sub parameters were tested, such as the size of the context and the smoothing parameter used to calculate the probability distribution.
@@ -496,7 +498,7 @@ For the context size, $k$ was tested with 3, 6 and 9, and for the smoothing para
 
 The results for both files are shown in figures \ref{fig:all_languages_p_c} and \ref{fig:all_languages_random_p_c}.
 
-By verifiying the results for the context size in figure \ref{fig:all_languages_p_c}, we can see that the finite context model produces a much better result than the other approaches,
+By verifiying the results for the context size in figure \ref{fig:all_languages_p_c}, we can see that the finite-context model produces a much better result than the other approaches,
 because it is able to clearly distinguish the correct language (the minimum value), with the second best candidate.
 When increasing $k$, this difference becomes even more clear, as seen in figures \ref{fig:all_languages_p_c:1:3} and \ref{fig:all_languages_p_c:1:6},
 although it increases the general entropy value per language, which makes the threshold line to low to detect the correct language in each section.
@@ -539,7 +541,7 @@ Through these results, the best value for \alpha was $10$ and for the context si
         \label{fig:all_languages_p_c:1:9}
     \end{subfigure}
     
-    \caption{Entropy of each language for "all_languages.txt",first-order finite context model by changing $k$}
+    \caption{Entropy of each language for "all_languages.txt",finite-context model by changing $k$}
     \label{fig:all_languages_p_c:k}
 \end{figure}
 
@@ -568,7 +570,7 @@ Through these results, the best value for \alpha was $10$ and for the context si
         \label{fig:all_languages_random_p_c:1:9}
     \end{subfigure}
     
-    \caption{Entropy of each language for "all_languages_random.txt",first-order finite context model by changing $k$}
+    \caption{Entropy of each language for "all_languages_random.txt",finite-context model by changing $k$}
     \label{fig:all_languages_random_p_c:k}
 \end{figure}
 
@@ -598,7 +600,7 @@ Through these results, the best value for \alpha was $10$ and for the context si
         \label{fig:all_languages_p_c:100:3}
     \end{subfigure}
     
-    \caption{Entropy of each language for "all_languages.txt",first-order finite context model by changing $\alpha$}
+    \caption{Entropy of each language for "all_languages.txt",finite-context model by changing $\alpha$}
     \label{fig:all_languages_p_c:alpha}
 \end{figure}
 
@@ -627,10 +629,9 @@ Through these results, the best value for \alpha was $10$ and for the context si
         \label{fig:all_languages_random_p_c:100:3}
     \end{subfigure}
     
-    \caption{Entropy of each language for "all_languages_random.txt",first-order finite context model by changing $\alpha$}
+    \caption{Entropy of each language for "all_languages_random.txt",finite-context model by changing $\alpha$}
     \label{fig:all_languages_random_p_c:alpha}
 \end{figure}
-
 
 \subsubsection{Copy pointer repositioning - Oldest pointer first}
 \label{subsubsec:results_locate_lang_oldest_pointer_first}
@@ -726,7 +727,7 @@ These results can be seen in the figures \ref{fig:all_languages_r_c} and \ref{fi
     \label{fig:all_languages_random_r_c}
 \end{figure}
 
-\subsubsection{Copy pointer repositioning - Static threshold}
+\subsubsection{Copy pointer threshold - Static threshold}
 \label{subsubsec:results_locate_lang_static_threshold}
 
 Finnaly, we also tested the different threshold strategies, starting with the static threshold.
@@ -749,7 +750,7 @@ In the figures \ref{fig:all_languages_t_n} and \ref{fig:all_languages_random_t_n
     \label{fig:all_languages_random_t_n}
 \end{figure}
 
-\subsubsection{Copy pointer repositioning - Successive fails threshold}
+\subsubsection{Copy pointer threshold - Successive fails threshold}
 \label{subsubsec:results_locate_lang_successive_fails_threshold}
 
 In this strategy, the threshold is set to a value that is calculated based on the number of successive fails that the model has.
@@ -772,7 +773,7 @@ the entropy values are slightly higher when observing the minimum entropy values
     \label{fig:all_languages_random_t_f}
 \end{figure}
 
-\subsubsection{Copy pointer repositioning - Rate of change threshold}
+\subsubsection{Copy pointer threshold - Rate of change threshold}
 \label{subsubsec:results_locate_lang_rate_of_change_threshold}
 
 Finnaly, we tested the rate of change threshold strategy with the value $0.01$, which is the one that produced the best results in the previous assignment.
@@ -795,6 +796,12 @@ This makes this strategy the best one when choosing the threshold to switch poin
     \caption{Entropy of each language for "all_languages_random.txt",Rate of change threshold}
     \label{fig:all_languages_random_t_c}
 \end{figure}
+
+\subsubsection{Variable reference size}
+
+We also analyzed the effect of the reference's size on the language classification.
+
+\dots
 
 \section{Conclusion}
 \label{sec:conclusion}
