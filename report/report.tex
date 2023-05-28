@@ -253,7 +253,9 @@ Contrary to the find_lang script, the locate_lang script caches the results of t
 This was done to speed up analysis since the processing of locate_lang itself contains many different parameters, and so we can avoid recalculating all necessary information in every run of the script if we only want to adjust the result processing and not the lang model parameters.
 This contrasts with the find_lang script, whose processing doesn't have any parameters, requiring only parameters to the lang model.
 
-The information at each target step for every reference is saved in a NumPy matrix, with a row for each reference and a column for each position in the target text.
+The information at each target step for every reference is saved in a NumPy matrix $M$, with a row for each language reference and a column for each position in the target text.
+This matrix is then manipulated to report the most likely row index corresponding to the probable language at each column, forming a row vector.
+From this vector, we segment the target indices into continuous groups, returning at which target position each group starts and to which language it belongs to.
 
 Since the information at the rows is very erratic and has many spikes due to the behaviour of the copy model, where copies are only done sometimes and not for very long, the data at each row is filtered using a low-pass filter to smoothen it.
 The low-pass filter was implemented using the Fast Fourier Transform (FFT).
@@ -270,12 +272,26 @@ An example of the frequencies composing the target data and the corresponding do
     \label{fig:low_pass_filter}
 \end{figure}
 
-% TODO: thresholds
+With the matrix $M$ representing the information at each step for every reference, we determine for each column, i.e. position in the target text, which row provides the minimum amount of information, that is which reference compressed the target symbol the best.
+However, we don't consider all kinds of minimum values.
+Since for locate_lang we want to identify sections of text that we deem unknown, i.e. they likely aren't related to any of the references, then we have to consider some kind of thresholds that the minimum values have to surpass to be truly accepted.
 
-% TODO: locate_lang argument list
+For this we considered two thresholds:
+\begin{itemize}
+    \item minimum threshold: the absolute minimum value should not be larger than a given fraction of the second minimum. This threshold was implemented to disregard sections where there is confusion between more than two references. This idea is similar to the \textit{confidence} metric calculated for find_lang in section \ref{subsec:methodology_find_lang}.
+    % TODO: rework talk about static threshold
+    \item static threshold: the absolute minimum value should not be larger than a given static threshold in bits. With this threshold, we disregard sections of text where the compression was not sufficient enough to consider that a reference truly represented the target language.
+\end{itemize}
+
 In the end, the following processing arguments are accepted:
 \begin{itemize}
-    \item 
+    \item \verb|minimum-threshold|: fraction of the second minimum below which the absolute minimum has to be so that it is considered.
+    \item \verb|static-threshold|: % TODO
+    \item \verb|frequency-filter|: the frequency dropoff of the low pass filter
+    \item \verb|fill-unknown|: make an effort to consider unknown language segments as being of one of the previously identified languages, using forward and backward filling.
+    \item \verb|labeled-output|: print the target text, with segments colored depending on the identified language.
+    \item \verb|plot|: plot the entire matrix $M$ after applying the low pass filter, along with the static threshold.
+    \item \verb|save-result|: save the plot of matrix $M$ to the specified file instead of showing it (only relevant if \verb|plot| was passed).
 \end{itemize}
 
 \section{Results}
