@@ -43,8 +43,8 @@ This is done by executing the lang model for each reference text and comparing t
 The second script is called locate_lang, which receives a target text and, like the find_lang script, executes the lang model for each reference text, but instead of returning the language with the lowest information, it returns the language with the lowest information for each section of the target text.
 This is done by saving which language has the lowest information for each step/character of the target text, and then checking the intervals where the language is the same, returning the language with the lowest information for each interval.
 
-In this report we will present the methodology used to implement the lang model, the find_lang and locate_lang scripts, in more detail in section \ref*{sec:methodology}, and the results obtained by testing the scripts with different target texts in section \ref*{sec:results}.
-And finally, in section \ref*{sec:conclusion}, we will present the conclusions of this assignment.
+In this report we will present the methodology used to implement the lang model, the find_lang and locate_lang scripts, in more detail in section \ref{sec:methodology}, and the results obtained by testing the scripts with different target texts in section \ref{sec:results}.
+And finally, in section \ref{sec:conclusion}, we will present the conclusions of this assignment.
 
 \section{Methodology}
 \label{sec:methodology}
@@ -423,6 +423,10 @@ With these results we can conclude that the finite context model approach is bet
 
 \subsection{Locate lang}
 \label{subsec:results_locate_lang}
+
+\dots
+
+For all graphs showing the reported information at each target position, the frequency dropoff used was 1000.
 
 \subsubsection{Base probability distribution - Uniform distribution}
 \label{subsubsec:results_locate_lang_uniform_distribution}
