@@ -31,7 +31,7 @@ After that, build the binaries, within the `release`/`debug` directory:
 cmake --build .
 ```
 
-The generated binaries **TODO** will be present in the `bin` folder.
+The generated binary `lang` will be present in the `bin` folder.
 
 ## Usage
 

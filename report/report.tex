@@ -118,8 +118,7 @@ For the lang program, the following changes were done from the first assignment'
     
     \item Usage of \verb|unordered_map|:
     Our previous copy model made heavy use of the \verb|map| data structure.
-    However, this structure enforces order, which we don't take advantage of, and is not the approximation to an hash table that we desired.
-    % TODO: talk more about the differences between map and unordered_map?
+    However, this structure enforces order, which we don't take advantage of, and is not the approximation to an hash table that we desired, contrary to \verb|unordered_map|.
     As such, in the lang program we changed all uses of the \verb|map| structure to the \verb|unordered_map|, with noticeable improvement in performance.
     
     \item Removed ReadingStrategy:
