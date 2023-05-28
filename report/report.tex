@@ -299,6 +299,31 @@ In the end, the following processing arguments are accepted:
     \item \verb|minimum-threshold|: fraction of the second minimum below which the absolute minimum has to be so that it is considered.
     \item \verb|static-threshold|: denominator $\gamma$ that defines the static threshold in terms of the target alphabet's cardinality
     \item \verb|frequency-filter|: the frequency dropoff of the low pass filter
+    A low-pass filter's frequency dropoff describes the reduction in amplitude or strength of a signal's higher-frequency components as the signal passes through the filter. 
+    Low-pass filters attenuate higher frequencies while allowing low-frequency signals to pass. 
+    We can see the diference between a low frequency dropoff in figure \ref{fig:no_freq_dropoff} and a higher frequency dropoff in figure \ref{fig:freq_dropoff}.
+
+
+    \begin{figure}
+        \centering
+        \begin{subfigure}[b]{0.4\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{/images/no_freq_dropoff.png}
+            \caption{Example of an output with very low frequency dropoff}
+            \label{fig:no_freq_dropoff}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.4\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{/images/freq_dropoff.png}
+            \caption{Image 2}
+            \label{fig:image2}
+        \end{subfigure}
+        \caption{Example of an output with higher low frequency dropoff}
+        \label{fig:freq_dropoff}
+    \end{figure}
+
+
     \item \verb|fill-unknown|: make an effort to consider unknown language segments as being of one of the previously identified languages, using forward and backward filling.
     \item \verb|labeled-output|: print the target text, with segments colored depending on the identified language.
     \item \verb|plot|: plot the entire matrix $M$ after applying the low pass filter, along with the static threshold.
