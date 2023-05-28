@@ -251,6 +251,7 @@ After all these results are saved, they are read from disk and analysis is perfo
 Contrary to the find_lang script, the locate_lang script caches the results of the lang model executions.
 This was done to speed up analysis since the processing of locate_lang itself contains many different parameters, and so we can avoid recalculating all necessary information in every run of the script if we only want to adjust the result processing and not the lang model parameters.
 This contrasts with the find_lang script, whose processing doesn't have any parameters, requiring only parameters to the lang model.
+The cached results keep track of which target file, which references and which parameters were passed to the lang program.
 
 The information at each target step for every reference is saved in a NumPy matrix $M$, with a row for each language reference and a column for each position in the target text.
 This matrix is then manipulated to report the most likely row index corresponding to the probable language at each column, forming a row vector.
@@ -278,7 +279,6 @@ Since for locate_lang we want to identify sections of text that we deem unknown,
 For this we considered two thresholds:
 \begin{itemize}
     \item minimum threshold: the absolute minimum value should not be larger than a given fraction of the second minimum. This threshold was implemented to disregard sections where there is confusion between more than two references. This idea is similar to the \textit{confidence} metric calculated for find_lang in section \ref{subsec:methodology_find_lang}.
-    % TODO: rework talk about static threshold
     \item static threshold: the absolute minimum value should not be larger than a given static threshold in bits. With this threshold, we disregard sections of text where the compression was not sufficient enough to consider that a reference truly represented the target language.
     This threshold is defined in terms of the cardinality of the target alphabet.
     More precisely, the static threshold $S$ in bits is given by the formula:

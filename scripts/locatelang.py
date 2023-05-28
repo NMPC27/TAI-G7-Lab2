@@ -18,21 +18,23 @@ class TargetCacheInfo:
     Useful to know whether the cached bins can be used or not for the model arguments that were passed to the script."""
 
     target: str
+    references_folder: str
     model_args: Dict[str, Any]
 
     def serialize(self) -> str:
-        return self.target + '\n' + \
+        return self.target + '\n' + self.references_folder + '\n' + \
             '\n'.join(f"{k}\t{v}" for k, v in self.model_args.items())
 
     @classmethod
     def deserialize(cls, s: str) -> 'TargetCacheInfo':
         lines = s.splitlines(keepends=False)
         target = lines[0]
+        references_folder = lines[1]
 
         split_tabs = lambda s: s.split('\t')
-        model_args = dict(map(split_tabs, lines[1:]))
+        model_args = dict(map(split_tabs, lines[2:]))
         
-        return TargetCacheInfo(target, model_args)
+        return TargetCacheInfo(target, references_folder, model_args)
 
 
 def low_pass_filter(signal: npt.ArrayLike, frequency_dropoff: float = 1e2) -> np.ndarray:
@@ -102,7 +104,7 @@ def spans_of_minimum_values(data: npt.ArrayLike, minimum_threshold: float, stati
     return sections, minimum_references[sections]
 
 
-def setup_target_bins_cache(target_path: str, bins_folder: str, lang_args: List[str]) -> Tuple[str, str]:
+def setup_target_bins_cache(target_path: str, references_folder: str, bins_folder: str, lang_args: List[str]) -> Tuple[str, str]:
     target_identifier, _ = os.path.splitext(os.path.basename(target_path))
     target_cache_path = os.path.join(bins_folder, target_identifier)
     target_cache_info_path = os.path.join(target_cache_path, '.info')
@@ -116,7 +118,7 @@ def setup_target_bins_cache(target_path: str, bins_folder: str, lang_args: List[
     lang_args_dict = vars(lang_parser.parse_args(lang_args))
 
     # Target and model info that the current script execution demands
-    requested_target_info = TargetCacheInfo(target_path, {k:v for k, v in lang_args_dict.items() if v is not None})
+    requested_target_info = TargetCacheInfo(target_path, references_folder,  {k:v for k, v in lang_args_dict.items() if v is not None})
 
     invalid_cache = False
 
@@ -133,6 +135,9 @@ def setup_target_bins_cache(target_path: str, bins_folder: str, lang_args: List[
         
         if cached_target_info.target != target_path:
             raise ValueError(f'the target file has the same name as a cached entry, but they are from different paths (path already in cache: {target_cache_info_path})!')
+
+        if cached_target_info.references_folder != references_folder:
+            raise ValueError(f'the specified references folder is not the same as the references folder used for calculating the cached bins (\'{references_folder}\' != \'{cached_target_info.references_folder}\')!')
 
         specified_keys = cached_target_info.model_args.keys() | requested_target_info.model_args.keys()
         non_matching_model_parameters = {}
@@ -268,7 +273,7 @@ def main(
 ):
     
     references = set(reference for reference in os.listdir(references_folder) if reference != '.empty')
-    target_identifier, target_cache_path, invalid_cache = setup_target_bins_cache(target_path, bins_folder, lang_args)
+    target_identifier, target_cache_path, invalid_cache = setup_target_bins_cache(target_path, references_folder, bins_folder, lang_args)
 
     # If the information streams haven't been calculated yet, do so now
     # Assume the CACHED_INFORMATION_BIN_FORMAT has a 0-character prefix and 4-character suffix
