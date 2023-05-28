@@ -1,0 +1,10 @@
+Classification accuracy: 90.885891%
+Classification accuracy: 97.760967%
+Classification accuracy: 99.273909%
+Classification accuracy: 99.659740%
+Classification accuracy: 99.732653%
+Classification accuracy: 99.750881%
+Classification accuracy: 99.753919%
+Classification accuracy: 99.766071%
+Classification accuracy: 99.778223%
+Classification accuracy: 99.781261%
