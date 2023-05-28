@@ -260,7 +260,7 @@ def main(
     n_processes: int = 1,
     print_labeled_target: bool = False,
     fill_unknown: bool = False,
-    static_threshold: float = None,
+    static_threshold_modifier: float = None,
     low_pass_filter_dropoff: float = 1e2,
     quit_at_error: bool = False,
     plot: bool = False,
@@ -311,7 +311,7 @@ def main(
     
     # Define a threshold using the target alphabet size
     def get_alphabet_size(filename):
-        with open(filename, 'r') as file:
+        with open(filename, 'rt') as file:
             content = file.read()
 
         unique_letters = set(content)
@@ -319,9 +319,9 @@ def main(
 
         return num_letters
 
-    if static_threshold is None:
-        target_alphabet_size = get_alphabet_size(target_path)
-        static_threshold = np.log2(target_alphabet_size) / 1.2
+    # Define the static threshold in terms of the cardinality of the target alphabet
+    target_alphabet_size = get_alphabet_size(target_path)
+    static_threshold = np.log2(target_alphabet_size) / static_threshold_modifier
 
     print(' done!')
 
@@ -375,17 +375,17 @@ In order to pass the list of arguments 'land_args', put those arguments at the e
 
 Example: locatelang -t <TARGET> -- -r n''')
     parser.add_argument('-t', '--target', required=True, type=str, help='target file of which to identify language segments')
-    parser.add_argument('-m', '--minimum-threshold', type=float, default=1, help='threshold of bits only below which is a portion of compressed text to be considered of a reference language' + default_str)
+    parser.add_argument('-m', '--minimum-threshold', type=float, default=1, help='how similar is the most likely reference allowed to be to the second most likely reference' + default_str)
+    parser.add_argument('-s', '--static-threshold', type=float, default=1.2, help='a static, global threshold of bits for all languages, only below which are reference languages considered. The higher the value the harsher the threshold, and should ideally be larger than 1' + default_str)
     parser.add_argument('-r', '--references-folder', type=str, default=os.path.join('example', 'reference'), help='location containing the language reference text' + default_str)
     parser.add_argument('-p', '--processes', type=int, default=1, help='maximum number of language analysis processes to run in parallel' + default_str)
     parser.add_argument('-f', '--frequency-filter', type=float, default=1e2, help='how much to downscale high frequencies of information')
     parser.add_argument('--bins-folder', type=str, default=os.path.join('scripts', 'input'), help='location on which the compressed information results of the target will be cached to' + default_str)
     parser.add_argument('--labeled-output', action='store_true', help='whether to print the target text labeled with colors for each detected language')
     parser.add_argument('--fill-unknown', action='store_true', help='whether to identify unknown language segments as a known language using forward filling (and backward filling for the first section if unknown)')
-    parser.add_argument('--static-threshold', type=float, help='a static, global threshold of bits for all languages, only below which are reference languages considered (default: None)')
     parser.add_argument('--ignore-errors', action='store_true', help='dont\'t quit if runtime errors from \'lang\' are suspected' + default_str)
-    parser.add_argument('--plot', action='store_true', help='whether to plot demonstrational graphs')
-    parser.add_argument('--save-result', type=str, default=None, help='ro run with the script')
+    parser.add_argument('--plot', action='store_true', help='whether to plot the filtered information graph')
+    parser.add_argument('--save-result', type=str, default=None, help='save the plot to a file, instead of showing them' + default_str)
     parser.add_argument('lang_args', nargs='*', help='arguments to the \'lang\' program')
 
     args = parser.parse_args()
@@ -400,7 +400,7 @@ Example: locatelang -t <TARGET> -- -r n''')
         n_processes=args.processes,
         print_labeled_target=args.labeled_output,
         fill_unknown=args.fill_unknown,
-        static_threshold=args.static_threshold,
+        static_threshold_modifier=args.static_threshold,
         low_pass_filter_dropoff=args.frequency_filter,
         quit_at_error=not args.ignore_errors,
         plot=args.plot,

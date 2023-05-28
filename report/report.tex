@@ -280,12 +280,24 @@ For this we considered two thresholds:
     \item minimum threshold: the absolute minimum value should not be larger than a given fraction of the second minimum. This threshold was implemented to disregard sections where there is confusion between more than two references. This idea is similar to the \textit{confidence} metric calculated for find_lang in section \ref{subsec:methodology_find_lang}.
     % TODO: rework talk about static threshold
     \item static threshold: the absolute minimum value should not be larger than a given static threshold in bits. With this threshold, we disregard sections of text where the compression was not sufficient enough to consider that a reference truly represented the target language.
+    This threshold is defined in terms of the cardinality of the target alphabet.
+    More precisely, the static threshold $S$ in bits is given by the formula:
+
+    $$
+    S = \frac{\log_2 |\Sigma|}{\gamma},
+    $$
+
+    where $\Sigma$ is the target alphabet and $\gamma$ is a real positive value.
+    This way, we define the static threshold as a fraction of a baseline compression, in which the reported probability distribution at each step is a uniform distribution with each symbol having $\log_2 |\Sigma|$ bits of information.
+    As such, if we set for instance $\gamma = 1$, then the threshold would be extremely forgiving, since as long as a minimum amount of compression is performed the references are considered.
+    However, as $\gamma$ increases, the threshold becomes more demanding, and requires the copy model to perform well enough to fall under the threshold.
+    We set $\gamma$ to a value that we consider appropriate enough for our model's performance, such that if when faced with an unkown language the model's performance should be closer to a uniform distribution and above this static threshold.
 \end{itemize}
 
 In the end, the following processing arguments are accepted:
 \begin{itemize}
     \item \verb|minimum-threshold|: fraction of the second minimum below which the absolute minimum has to be so that it is considered.
-    \item \verb|static-threshold|: % TODO
+    \item \verb|static-threshold|: denominator $\gamma$ that defines the static threshold in terms of the target alphabet's cardinality
     \item \verb|frequency-filter|: the frequency dropoff of the low pass filter
     \item \verb|fill-unknown|: make an effort to consider unknown language segments as being of one of the previously identified languages, using forward and backward filling.
     \item \verb|labeled-output|: print the target text, with segments colored depending on the identified language.
@@ -639,7 +651,7 @@ This means that the pointer repositioning will not have much effect on the entro
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/–r_o.png}
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_o.png}
     \caption{Entropy of each language for "all_languages_random.txt",oldest pointer first}
     \label{fig:all_languages_random_r_o}
 \end{figure}
@@ -660,7 +672,7 @@ because the pointer chosen for each pattern will always be the same, just like t
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/–r_n.png}
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_n.png}
     \caption{Entropy of each language for "all_languages_random.txt",newer pointer first}
     \label{fig:all_languages_random_r_n}
 \end{figure}
@@ -682,7 +694,7 @@ Also, like the previous approaches, we can still distinct the different language
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/–r_m.png}
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_m.png}
     \caption{Entropy of each language for "all_languages_random.txt",Most common prediction}
     \label{fig:all_languages_random_r_m}
 \end{figure}
@@ -705,7 +717,7 @@ These results can be seen in the figures \ref{fig:all_languages_r_c} and \ref{fi
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/–r_c:100.png}
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_c:100.png}
     \caption{Entropy of each language for "all_languages_random.txt",Most common prediction bounded}
     \label{fig:all_languages_random_r_c}
 \end{figure}
