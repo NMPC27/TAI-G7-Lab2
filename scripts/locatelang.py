@@ -14,7 +14,7 @@ CACHED_INFORMATION_BIN_FORMAT = '{reference}.bin'
 
 @dataclass
 class TargetCacheInfo:
-    """Information regarding the cached information bins, such as target file path and 'lang' arguments
+    """Information regarding the cached information bins, such as target file path and 'lang' arguments.
     Useful to know whether the cached bins can be used or not for the model arguments that were passed to the script."""
 
     target: str
@@ -46,21 +46,26 @@ def low_pass_filter(signal: npt.ArrayLike, frequency_dropoff: float = 1e2) -> np
     return np.fft.ifft(out * np.e**-np.abs(frequency_dropoff * freq)).real
 
 
-# TODO: update documentation
 def spans_of_minimum_values(data: npt.ArrayLike, minimum_threshold: float, static_threshold: float, fill_unknown: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """From a matrix representing N parallel streams of the same size, identify which of the streams provided the minimum value and at what sections.
     
-    Only minimum values under a given threshold are considered.
+    Only minimum values that meet the following criteria are considered:
+    - the absolute value is not larger than `(minimum_threshold * 100) %` of the second minimum, with `0 < minimum_threshold <= 1`
+    - the absolute value is not larger than `static_threshold`
 
     Parameters
     ----------
     data : ArrayLike
-        Matrix of size NxM containing the N streams as the rows.
+        Matrix of size NxM containing the N streams each with M data points.
     minimum_threshold : float
-        Threshold below which to consider minimum values.
-
-        If no minimum values are under the threshold at a certain index, then the index is assigned to the last minimum stream up to this point.
-        If no minimum values are under the threshold at the beginning, then the section is assigned to the very first minimum stream.
+        Value between 0 exclusive and 1 inclusive, indicating the maximum value that the minimums to be considered should have as a fraction of the second minimum.
+    static_threshold : float
+        Static threshold in bits below which to consider minimum values.
+    fill_unknown : bool
+        Whether to fill all unknown segments with one known minimum stream.
+    
+        If no minimum values are under the thresholds at a certain index, then the index is assigned to the last minimum stream up to this point.
+        If no minimum values are under the thresholds at the beginning, then the section is assigned to the very first minimum stream.
 
     Returns
     -------
@@ -226,7 +231,7 @@ async def calculate_references_multiprocess(target_path: str, lang_args: List[st
             if stderr:
                 print('\n')
                 print(f'WARNING: possible error occurred during execution of the process! Outputting the captured stderr:')
-                print('\033[0;31m', stderr.decode(), '\033[0m', sep='')
+                print(ColorCode.RED.foreground(), stderr.decode(), ColorCode.END.value, sep='')
                 if quit_at_error:
                     failed_by_error = True
                 continue
@@ -294,10 +299,10 @@ def main(
     information_streams[0, :] = low_pass_filter(information_stream_row, low_pass_filter_dropoff)
     print('.', end='', flush=True)
 
-    data_to_filename = {'0': information_bins[0][:-4], '-1': '<unknown>'}
+    data_to_filename = {0: information_bins[0][:-4], -1: '<unknown>'}
 
     for i, information_bin in enumerate(information_bins[1:]):
-        data_to_filename[str(i+1)] = information_bin[:-4]
+        data_to_filename[i+1] = information_bin[:-4]
         information_stream_row = np.fromfile(os.path.join(target_cache_path, information_bin), np.float64)
         information_streams[i+1, :] = low_pass_filter(information_stream_row, low_pass_filter_dropoff)
         print('.', end='', flush=True)
@@ -318,59 +323,29 @@ def main(
 
     print(' done!')
 
-    print('Detecting language spans with method 1...', end='', flush=True)
+    print('Detecting language spans...', end='', flush=True)
     minimum_references_locations, minimum_references = spans_of_minimum_values(information_streams, minimum_threshold, static_threshold, fill_unknown)
     print(' done!')
 
-    print('Method 1 results:')
+    print('Results:')
     print('sections=', list(minimum_references_locations), sep='')
-    print('languages=', [data_to_filename[str(reference_i)] for reference_i in minimum_references], sep='')
-
-    # print('Detecting language spans with method 2...', end='', flush=True)
-    # # Generate contiguous intervals
-    # intervals = []
-    # start = None
-
-    # minimum_references = np.argmin(information_streams, axis=0)
-    # minimums_to_consider = np.min(information_streams, axis=0) < 2
-    # minimum_references[~minimums_to_consider] = -1   
-
-    # for i in range(len(minimum_references)-1):
-    #     if minimum_references[i] == minimum_references[i+1]:
-    #         if start is None:
-    #             start = i
-    #     else:
-    #         if start is not None:
-    #             intervals.append((start, i+1, data_to_filename[str(minimum_references[start])] if minimum_references[start] != -1 else None))
-    #             start = None
-
-    # # Check if an interval is open at the end of the array
-    # if start is not None:
-    #     intervals.append((start, len(minimum_references),data_to_filename[str(minimum_references[start])] if minimum_references[start] != -1 else None))
-
-    # print(' done!')
-
-    # # Print intervals
-    # print('Method 2 results:')
-    # for interval in intervals:
-    #     print(interval)
+    print('languages=', [data_to_filename[reference_i] for reference_i in minimum_references], sep='')
 
     if print_labeled_target:
         print_labeled_target_terminal(minimum_references, minimum_references_locations, target_path, data_to_filename)
 
-    colors = [
-        '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF',
-        '#800000', '#008000', '#000080', '#808000', '#008080', '#800080',
-        '#FFA500', '#A52A2A', '#800080', '#FFC0CB', '#000000', '#FF69B4',
-        '#7CFC00', '#8A2BE2', '#FF4500', '#00FF7F', '#1E90FF'
-    ]
-
-
     if plot:
+        colors = [
+            '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF',
+            '#800000', '#008000', '#000080', '#808000', '#008080', '#800080',
+            '#FFA500', '#A52A2A', '#800080', '#FFC0CB', '#000000', '#FF69B4',
+            '#7CFC00', '#8A2BE2', '#FF4500', '#00FF7F', '#1E90FF'
+        ]
+            
         # Information over time
         plt.figure(figsize=(15, 8))
         for i in range(len(information_bins)):
-            plt.plot(information_streams[i, :],color = colors[i%len(colors)], label=data_to_filename[str(i)])
+            plt.plot(information_streams[i, :], color = colors[i % len(colors)], label=data_to_filename[i])
         plt.plot([static_threshold] * information_streams.shape[1], label='<static threshold>')
         plt.title('Information of each symbol in the target after training on each reference')
         plt.xlabel('Target position')
@@ -379,7 +354,7 @@ def main(
         plt.tight_layout()
 
         if save_result:
-            plt.savefig(save_result+'.png')
+            plt.savefig(save_result + '.png')
         else:
             plt.show()
 

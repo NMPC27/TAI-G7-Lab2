@@ -3,6 +3,7 @@ import argparse
 import asyncio
 import math
 from typing import List, Dict
+from color_code import ColorCode
 
 
 async def calculate_total_information_multiprocess(target_path: str, lang_args: List[str], references: List[str], references_folder: str, max_parallel_processes: int = 1, quit_at_error: bool = True) -> Dict[str, float]:
@@ -52,7 +53,7 @@ async def calculate_total_information_multiprocess(target_path: str, lang_args: 
             if stderr:
                 print('\n')
                 print(f'WARNING: possible error occurred during execution of the process! Outputting the captured stderr:')
-                print('\033[0;31m', stderr.decode(), '\033[0m', sep='')
+                print(ColorCode.RED.foreground(), stderr.decode(), ColorCode.END.value, sep='')
                 if quit_at_error:
                     failed_by_error = True
                 continue
