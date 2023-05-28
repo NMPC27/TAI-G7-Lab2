@@ -80,22 +80,24 @@ def spans_of_minimum_values(data: npt.ArrayLike, minimum_threshold: float, stati
     minimum_2_references = np.sort(data, axis=0)[:2, :]
     minimums_to_consider = np.logical_and(((minimum_2_references[0, :] / minimum_2_references[1, :]) < minimum_threshold ), minimum_2_references[0, :] < static_threshold)
 
-    minimum_references[~minimums_to_consider] = -1                                      # -1 -1 -1  9  9  9  9 -1 -1 -1 -1 -1  7  7 -1 -1   base
+    minimum_references[~minimums_to_consider] = -1                                          # -1 -1 -1  9  9  9  9 -1 -1 -1 -1 -1  7  7 -1 -1   base
 
     if fill_unknown:
         # forward filling
-        prev = np.arange(minimum_references.size)                                       #  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15   generate indices
-        prev[~minimums_to_consider] = -1                                                # -1 -1 -1  3  4  5  6 -1 -1 -1 -1 -1 12 13 -1 -1   set invalid indices to small number
-        prev = np.maximum.accumulate(prev)                                              # -1 -1 -1  3  4  5  6  6  6  6  6  6 12 13 13 13   accumulate maximum from left to right
+        prev = np.arange(minimum_references.size)                                           #  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15   generate indices
+        prev[~minimums_to_consider] = -1                                                    # -1 -1 -1  3  4  5  6 -1 -1 -1 -1 -1 12 13 -1 -1   set invalid indices to small number
+        prev = np.maximum.accumulate(prev)                                                  # -1 -1 -1  3  4  5  6  6  6  6  6  6 12 13 13 13   accumulate maximum from left to right
+        minimum_references = minimum_references[prev]                                       #  ?  ?  ?  9  9  9  9  9  9  9  9  9  7  7  7  7   index 'base' with indices from 'prev'
 
         # backward filling (first section, if unknown)
-        minimum_references = minimum_references[prev]                                   #  ?  ?  ?  9  9  9  9  9  9  9  9  9  7  7  7  7   index 'base' with indices from 'prev'
-        first_non_minus1 = np.argwhere(minimum_references != -1)[0][0]                  #           ^- index 3                              get the first valid index
-        minimum_references[:first_non_minus1] = minimum_references[first_non_minus1]    #  9  9  9  9  9  9  9  9  9  9  9  9  7  7  7  7   set until valid index (3) the value in valid index (9)
+        all_non_minus1_found = np.argwhere(minimum_references != -1).flatten()
+        if all_non_minus1_found.size != 0:                                                  #  ?  ?  ?  9  9  9  9  9  9  9  9  9  7  7  7  7
+            first_non_minus1 = all_non_minus1_found[0]                                      #           ^- index 3                              get the first valid index
+            minimum_references[:first_non_minus1] = minimum_references[first_non_minus1]    #  9  9  9  9  9  9  9  9  9  9  9  9  7  7  7  7   set until valid index (3) the value in valid index (9)
 
-    ediff = np.ediff1d(minimum_references)                                              #  0  0  0  0  0  0  0  0  0  0  0 -2  0  0  0      check the places with discontinuity (reference change)
-    all_but_first = np.argwhere(ediff != 0).flatten() + 1                               # [11] + 1 = [12]                                   get the index of those discontinuity places (sum 1 since it's shifted to the left)
-    sections = np.hstack(([0], all_but_first))                                          # [0] + [12] = [0, 12]                              add the first section (starts at the beginning)
+    ediff = np.ediff1d(minimum_references)                                                  #  0  0  0  0  0  0  0  0  0  0  0 -2  0  0  0      check the places with discontinuity (reference change)
+    all_but_first = np.argwhere(ediff != 0).flatten() + 1                                   # [11] + 1 = [12]                                   get the index of those discontinuity places (sum 1 since it's shifted to the left)
+    sections = np.hstack(([0], all_but_first))                                              # [0] + [12] = [0, 12]                              add the first section (starts at the beginning)
 
     return sections, minimum_references[sections]
 
