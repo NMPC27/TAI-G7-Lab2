@@ -17,15 +17,19 @@
  * 
  *  Methods defined in this class:
  *      \li registerPattern
+ *      \li updateDistribution
  *      \li predictionSetup
  *      \li predict
  *      \li advance
  *      \li firstPassOverReference
- *      \li eof
+ *      \li firstPassOverTarget
+ *      \li eofReference
+ *      \li eofTarget
  *      \li countof
  *      \li guess
  *      \li progress
  *      \li initializeOnReference
+ *      \li initializeOnTarget
  *      \li calculateProbability
  *      \li setRemainderProbabilities
  *      \li surpassedAnyThreshold
@@ -33,7 +37,6 @@
  *  \author Pedro Lima 97860 && Nuno Cunha 98124 && Martinho Tavares 98262
  */
 
-// TODO: put documentation regarding parameters on the parameters themselves
 /**
  * @brief Copy Model main class.
  * 
@@ -96,111 +99,72 @@ public:
     CopyModel(int k, double alpha, CopyPointerThreshold** pt, int ptn, CopyPointerManager* pm, BaseDistribution* bd) : 
         k(k), alpha(alpha), pointer_threshold(pt), pointer_threshold_number(ptn), pointer_manager(pm), base_distribution(bd) {}
 
-/**
- * @brief Registers the position of the pattern read in the file to a map (key = pattern, value = array of pointers where that pattern was detected), located in the pointer_manager.
- * 
- * @return true 
- * @return false 
- */
+/** @brief Registers the position of the pattern read in the file to a map (key = pattern, value = array of pointers where that pattern was detected), located in the pointer_manager */
     bool registerPattern();
-/**
- * @brief Check if the current pattern has already been registered.
- * 
- * @return true 
- * @return false 
- */
+
+/** @brief Check if the current pattern has already been registered */
     bool isPatternRegistered();
+
 /**
  * @brief Verifies whether we can make a predction or not.
+ * 
  * This is done by checking if the copy_pointer isn't pointing to the current position.
  * It also gets the copy pointer from the pointer_manager, if the copy_pointer is pointing to the current position.
  * It also triggers the repositioning of the copy pointer, if the hit probability surpasses the threshold.
  * 
- * @return true 
- * @return false 
  */
     bool predictionSetup(bool);
-/**
- * @brief Predicts the next symbol in the file.
- * 
- * This is done by comparing the symbol in the copy position with the symbol in the current position.
- * 
- * @return true 
- * @return false 
- */
+
+/** @brief Predicts the next symbol in the file. This is done by comparing the symbol in the copy position with the symbol in the current position */
     bool predict();
-/**
- * @brief Advances the current_position and copy_position in the file, while updating the current_pattern to the one corresponding to the new current_position.
- * 
- *  
- */
+
+/** @brief Advances the current_position and copy_position in the file, while updating the current_pattern to the one corresponding to the new current_position */
     void advance();
-/**
- * @brief First read of the file.
- * 
- * This is used to count the number of times each symbol appears in the file, to calculate the base distribution.
- * 
- */
-    // TODO: rename this to something more descriptive (what's done in the "first pass"?? there are multiple "first passes"...)
+
+/** @brief First read of the reference file. This is used to count the number of times each symbol appears in the file and store the reference in memory */
     void firstPassOverReference(std::string);
+
+/** @brief First read of the target file. This is used to determine the target alphabet, set the base distribution and store the target in memory */
     void firstPassOverTarget(std::string);
+
+/** @brief Update the distribution considering the current pattern as context. Used when training on the reference text */
     void updateDistribution();
-/**
- * @brief Verifies if the end of the file has been reached.
- * 
- * @return true 
- * @return false 
- */
+    
+/** @brief Verifies whether the end of the reference file has been reached */
     bool eofReference();
+    
+/** @brief Verifies whether the end of the target file has been reached */
     bool eofTarget();
-/**
- * @brief Returns the number of times a symbol appears in the file.
- * 
- * @return int 
- */
+    
+/** @brief Returns the number of times a symbol appears in the file */
     int countOf(wchar_t);
-/**
- * @brief In case we can't make a prediction, we use the base distribution to guess the next symbol.
- * 
- */
+
+/** @brief In case we can't make a prediction, we use the base distribution to guess the next symbol */
     void guess();
-/**
- * @brief Returns a percentage of how much of the file has been read.
- * 
- * @return double 
- */
+
+/** @brief Returns a percentage of how much of the file has been read */
     double progress();
-/**
- * @brief Initializes the current_pattern and copy_pattern with a pattern of k size, composed of the most frequent symbol in the file 
- * 
- */
+
+/** @brief Initializes the current_pattern and copy_pattern with a pattern of size k on the reference text */
     void initializeOnReference();
+
+/** @brief Initializes the current_pattern and copy_pattern with a pattern of size k on the target text */
     void initializeOnTarget();
 
-    // Read-only values. Always overwritten when calling predictNext()
+    // Read-only values. Always overwritten when calling predict()
     std::unordered_map<wchar_t, double> probability_distribution;
     double hit_probability = 0;
     wchar_t prediction = '\0';
     wchar_t actual = '\0';
 
 private:
-/**
- * @brief Expression used to calculate the hit probability.
- * 
- * @return double 
- */
+/** @brief Expression used to calculate the hit probability */
     double calculateProbability(int, int);
-/**
- * @brief Set the Remainder Probabilities of the probability distribution after the prediction.
- * 
- */
+
+/** @brief Set the Remainder Probabilities of the probability distribution after the prediction */
     void setRemainderProbabilities(wchar_t, double, std::unordered_map<wchar_t, double>);
-/**
- * @brief Verifies if the hit probability surpasses any threshold, used when the user defined more than one type of threshold for copy pointer changing.
- * 
- * @return true 
- * @return false 
- */
+
+/** @brief Verifies if the hit probability surpasses any threshold, used when the user defined more than one type of threshold for copy pointer changing */
     bool surpassedAnyThreshold(double);
 
 };
