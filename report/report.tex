@@ -620,26 +620,166 @@ Through these results, the best value for \alpha was $10$ and for the context si
 \subsubsection{Copy pointer repositioning - Oldest pointer first}
 \label{subsubsec:results_locate_lang_oldest_pointer_first}
 
+To see the effect of the pointer repositioning, we tested the different approaches when using a frequency distribution, which was the default parameter when testing.
+So these results will be mostly similar we the results shown for the frequency distribution section.
+
+In this approach we can still distinct the different languages, but not as clearly as some of the previous approaches.
+In the figure \ref{fig:all_languages_r_o} we can see that the entropy of the languages are mostly the same, excluding Greek and Bulgarian.
+One of the positives of this approach is that we can identify much more easily an unknown language (languages that are not in the references) than in some of the previous approaches
+For the “all_languages_random.txt” file we can see in the figure \ref{fig:all_languages_r_o}, that the same behavior is seen, but now with slightly more differences between languages.
+
+In contrast to the previous assignment, the lang model is fully trained before compressing the target file. This means that the pointer chosen for each pattern will always be the same.
+This means that the pointer repositioning will not have much effect on the entropy of the target file, since the pointer will always be the same.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_o.png}
+    \caption{Entropy of each language for "all_languages.txt",oldest pointer first}
+    \label{fig:all_languages_r_o}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/–r_o.png}
+    \caption{Entropy of each language for "all_languages_random.txt",oldest pointer first}
+    \label{fig:all_languages_random_r_o}
+\end{figure}
+
 \subsubsection{Copy pointer repositioning - Newest pointer first}
 \label{subsubsec:results_locate_lang_newest_pointer_first}
+
+Like in the older pointer approach, we can still distinct the different languages, using the newest pointer.
+In both the \ref{fig:all_languages_r_n} and \ref{fig:all_languages_random_r_n}, we can see that the behavior is extremely similar to the older pointer approach,
+because the pointer chosen for each pattern will always be the same, just like the older pointer approach.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_n.png}
+    \caption{Entropy of each language for "all_languages.txt",newer pointer first}
+    \label{fig:all_languages_r_n}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/–r_n.png}
+    \caption{Entropy of each language for "all_languages_random.txt",newer pointer first}
+    \label{fig:all_languages_random_r_n}
+\end{figure}
 
 \subsubsection{Copy pointer repositioning - Most common prediction}
 \label{subsubsec:results_locate_lang_most_common_prediction}
 
+Just like the previous approaches, with this strategy, the pointer chosen for each pattern will always be the same.
+But in this case, the pointer chosen will be the one with the most common prediction.
+
+Also, like the previous approaches, we can still distinct the different languages, though the results are still identical, as we can see in the figures \ref{fig:all_languages_r_m} and \ref{fig:all_languages_random_r_m}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_m.png}
+    \caption{Entropy of each language for "all_languages.txt",Most common prediction}
+    \label{fig:all_languages_r_m}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/–r_m.png}
+    \caption{Entropy of each language for "all_languages_random.txt",Most common prediction}
+    \label{fig:all_languages_random_r_m}
+\end{figure}
+
 \subsubsection{Copy pointer repositioning - Most common prediction bounded}
 \label{subsubsec:results_locate_lang_most_common_prediction_bounded}
+
+This version of the most common prediction strategy, is the same as the previous one, but with a bound on the number of pointers that can be chosen.
+For this test we used the best value for the size of the bound that we verified in the last assignment, which was $100$.
+
+Similarly to the previous repositioning strategies, because the model is trained before the compression, the results are identical to the previous approaches.
+These results can be seen in the figures \ref{fig:all_languages_r_c} and \ref{fig:all_languages_random_r_c}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_c:100.png}
+    \caption{Entropy of each language for "all_languages.txt",Most common prediction bounded}
+    \label{fig:all_languages_r_c}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/–r_c:100.png}
+    \caption{Entropy of each language for "all_languages_random.txt",Most common prediction bounded}
+    \label{fig:all_languages_random_r_c}
+\end{figure}
 
 \subsubsection{Copy pointer repositioning - Static threshold}
 \label{subsubsec:results_locate_lang_static_threshold}
 
+Finnaly, we also tested the different threshold strategies, starting with the static threshold.
+
+In this strategy, the threshold is set to a fixed value, which in this case is $0.5$ because it was the one which produced the lowest entropy values in the previous assignment.
+
+In the figures \ref{fig:all_languages_t_n} and \ref{fig:all_languages_random_t_n}, we can see that the results are identical to the previous approaches.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_n:0.5.png}
+    \caption{Entropy of each language for "all_languages.txt",Static threshold}
+    \label{fig:all_languages_t_n}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_n:0.5.png}
+    \caption{Entropy of each language for "all_languages_random.txt",Static threshold}
+    \label{fig:all_languages_random_t_n}
+\end{figure}
+
 \subsubsection{Copy pointer repositioning - Successive fails threshold}
 \label{subsubsec:results_locate_lang_successive_fails_threshold}
+
+In this strategy, the threshold is set to a value that is calculated based on the number of successive fails that the model has.
+In this case, we used the value that we used in the previous assignment that produced better results, which was $9$.
+
+Interestingly, in the figures \ref{fig:all_languages_t_f} and \ref{fig:all_languages_random_t_f}, we can see that the results, although similar to the use of the static threshold,
+the entropy values are slightly higher when observing the minimum entropy values, corresponding to the predicted language for the section.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_f:9.png}
+    \caption{Entropy of each language for "all_languages.txt",Successive fails threshold}
+    \label{fig:all_languages_t_f}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_f:9.png}
+    \caption{Entropy of each language for "all_languages_random.txt",Successive fails threshold}
+    \label{fig:all_languages_random_t_f}
+\end{figure}
 
 \subsubsection{Copy pointer repositioning - Rate of change threshold}
 \label{subsubsec:results_locate_lang_rate_of_change_threshold}
 
+Finnaly, we tested the rate of change threshold strategy with the value $0.01$, which is the one that produced the best results in the previous assignment.
 
+By observing the figures \ref{fig:all_languages_t_c} and \ref{fig:all_languages_random_t_c}, we can see that the difference between the entropy values of the minimun entropy
+and second minimun entropy is a bit higher than the previous threshold strategies, which means that the model is more confident in the prediction of the language of the section.
 
+This makes this strategy the best one when choosing the threshold to switch pointers.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_c:0.01.png}
+    \caption{Entropy of each language for "all_languages.txt",Rate of change threshold}
+    \label{fig:all_languages_t_c}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_c:0.01.png}
+    \caption{Entropy of each language for "all_languages_random.txt",Rate of change threshold}
+    \label{fig:all_languages_random_t_c}
+\end{figure}
 
 \section{Conclusion}
 \label{sec:conclusion}
