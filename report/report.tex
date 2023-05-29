@@ -7,6 +7,7 @@
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{url}
+\usepackage{hyphenat} % hyphenation of underscores
 
 \begin{document}
 
@@ -37,13 +38,13 @@ If using multiple references, we can comparatively identify a language, by check
 One of the other new features implemented in the \texttt{lang} model is the ability to use a finite-context model for the probabilities of non-hit symbols, instead of using the uniform or frequency probability distributions.
 
 With the new model implemented, two other scripts were developed to test its performance and obtain the language prediction in an entire text file or in specific sections of a text.
-The first script is called \texttt{find_lang}, which receives a target text and uses all the existing references to predict the language of the target text, returning the language with the highest probability of being the target's language.
+The first script is called \texttt{find\_lang}, which receives a target text and uses all the existing references to predict the language of the target text, returning the language with the highest probability of being the target's language.
 This is done by executing the \texttt{lang} model for each reference text and comparing the total compressed information obtained for each language, returning the reference language that reported the lowest information.
 
-The second script is called \texttt{locate_lang}, which receives a target text and, like the \texttt{find_lang} script, executes the lang model for each reference text, but instead of returning the language with the lowest information, it returns the language with the lowest information for each section of the target text.
+The second script is called \texttt{locate\_lang}, which receives a target text and, like the \texttt{find\_lang} script, executes the lang model for each reference text, but instead of returning the language with the lowest information, it returns the language with the lowest information for each section of the target text.
 This is done by saving which language has the lowest information for each step/character of the target text, and then checking the intervals where the language is the same, returning the language that reported the lowest information for each interval.
 
-In this report we will present the methodology used to implement the \texttt{lang} model, the \texttt{find_lang} and \texttt{locate_lang} scripts in detail in section \ref{sec:methodology}, and the results obtained by testing the scripts with different target texts in section \ref{sec:results}.
+In this report we will present the methodology used to implement the \texttt{lang} model, the \texttt{find\_lang} and \texttt{locate\_lang} scripts in detail in section \ref{sec:methodology}, and the results obtained by testing the scripts with different target texts in section \ref{sec:results}.
 And finally, in section \ref{sec:conclusion}, we will present the conclusions of this assignment.
 
 \section{Methodology}
@@ -52,13 +53,13 @@ And finally, in section \ref{sec:conclusion}, we will present the conclusions of
 For the development of the different components, we utilized different approaches.
 The \texttt{lang} model was written in C++, extending and improving the copy model program developed in the previous assignment.
 
-However, the \texttt{find_lang} and \texttt{locate_lang} scripts were developed in Python.
+However, the \texttt{find\_lang} and \texttt{locate\_lang} scripts were developed in Python.
 These scripts essentially perform many independent runs of the \texttt{lang} model using different references, and parse the output as they desire.
 Since practically all of the heavy processing is performed by the \texttt{lang} model, we can afford the loss of performance that running a script in Python entails in turn for the much increased development simplicity.
 In fact, in practice we noticed that most of the execution time spent on these scripts is in the \texttt{lang} model, as the result processing in Python is relatively simple.
 For both scripts, parameters of the \texttt{lang} model can be specified.
 
-Even then, \texttt{find_lang} and \texttt{locate_lang} take too much time waiting for the results of the \texttt{lang} model.
+Even then, \texttt{find\_lang} and \texttt{locate\_lang} take too much time waiting for the results of the \texttt{lang} model.
 Therefore, to ease this large bottleneck, we added support for multiprocessing to both of these scripts.
 Since different \texttt{lang} models with different references can be run completely independently, without any need of interprocess communication, we can easily launch multiple processes.
 The ideal option would be to integrate multithreading directly into the \texttt{lang} model program itself, in C++, which allows greater memory efficiency as the target text doesn't have to be stored in memory multiple times, one for each process.
@@ -103,7 +104,7 @@ For the \texttt{lang} program, the following changes were done from the first as
     Therefore, we initialize in the same way, using the last $k$ symbols of the reference text.
     As such, it will be as if the target text was concatenated at the end of the reference text.
     
-    \item Usage of \texttt{string_view}:
+    \item Usage of \texttt{string\_view}:
     In the previous assignment, we used strings to represent the $k$-sized context/window as we advanced on the text.
     For the copy model itself, we had an hash table whose keys were these $k$-sized windows, i.e. $k$-sized strings.
     This had the disadvantage that, effectively, the entire content of the message being trained on would be reflected in the keys of this hash table.
@@ -116,10 +117,10 @@ For the \texttt{lang} program, the following changes were done from the first as
     This allows the \texttt{lang} program to be more memory efficient by simply pointing to the message content that is already in memory, from which copies are made.
     Additionally, this enforces a fixed size for the strings, which for our case makes sense as the size is always a fixed value $k$.
     
-    \item Usage of \texttt{unordered_map}:
+    \item Usage of \texttt{unordered\_map}:
     Our previous copy model made heavy use of the \texttt{map} data structure.
-    However, this structure enforces order, which we don't take advantage of, and is not the approximation to an hash table that we desired, contrary to \texttt{unordered_map}.
-    As such, in the lang program we changed all uses of the \texttt{map} structure to \texttt{unordered_map}, with noticeable improvement in performance.
+    However, this structure enforces order, which we don't take advantage of, and is not the approximation to an hash table that we desired, contrary to \texttt{unordered\_map}.
+    As such, in the lang program we changed all uses of the \texttt{map} structure to \texttt{unordered\_map}, with noticeable improvement in performance.
     
     \item Removed \texttt{ReadingStrategy}:
     In the first assignment, we initially planned to evaluate different approaches to reading the message from disk: either entirely into memory, or in binary directly from disk in case we could not load the entire message into memory.
@@ -153,16 +154,16 @@ As such, \texttt{NextOldestCopyPointerManager} is the only manager whose copy po
 \label{subsubsec:methodology_lang_model_verbose}
 
 The \texttt{lang} program was required to output the total number of bits estimated to be necessary to compress the target text based on the reference text.
-To simplify output analysis by the \texttt{find_lang} script, we added the minimal verbose mode specified with the parameter \texttt{-v o}, which simply prints to standard output nothing more than the total number of bits required for compression.
+To simplify output analysis by the \texttt{find\_lang} script, we added the minimal verbose mode specified with the parameter \texttt{-v o}, which simply prints to standard output nothing more than the total number of bits required for compression.
 
-Additionally, for the \texttt{locate_lang} script, we needed to know what was the reported information content in bits for each symbol in the target, to correctly identify in which language was each text segment.
+Additionally, for the \texttt{locate\_lang} script, we needed to know what was the reported information content in bits for each symbol in the target, to correctly identify in which language was each text segment.
 Therefore, we modified the previous ``machine'' verbose mode, specified with the parameter \texttt{-v m}, which used to print the whole probability distribution in CSV format to standard output.
 This output was previously saved to disk using shell redirection, and since the CSV format was very wasteful in terms of space a lot of disk memory was necessary for these files.
 
 Since now we are only concerned with the probability of the actual symbol in the message, we only need one of those values of the probability distribution at every step.
 As such, we opted to instead of printing the floating-point probability values to standard output, to write them directly in sequence to a file in binary format.
 This allows for a densely-packed representation of the probability values over the message since no newlines or separators are used and the values are written in their full binary content instead of a character string representation in digits each occupying a byte, saving tremendously in space when compared with the previous assignment's approach.
-We can then load these values in a highly efficient manner from the \texttt{locate_lang} script using the NumPy library.
+We can then load these values in a highly efficient manner from the \texttt{locate\_lang} script using the NumPy library.
 Do note that these floating-point values, declared as \texttt{double}, are assumed to occupy 64 bits.
 
 Since the new ``machine'' verbose mode outputs the probabilities to a binary file, we added the possibility to declare to which file they are written, by specifying it as an ``option parameter'': \verb|-v m:X|, where \texttt{X} is the path of the file.
@@ -210,7 +211,7 @@ As such, we opted for the lazy calculation of the probability distributions, sin
 \subsection{Find lang}
 \label{subsec:methodology_find_lang}
 
-The \texttt{find_lang} script was required to, given a target text and a bank of references, determine in which language the target text was written.
+The \texttt{find\_lang} script was required to, given a target text and a bank of references, determine in which language the target text was written.
 This is done by running the \texttt{lang} program for each combination of the target text and a reference text from the bank, getting the reported total information content in bits using the minimal verbose mode \texttt{-v o}, and reporting the reference text whose reported value was the lowest.
 
 The script doesn't take into account its overall performance to, for example, indicate that it doesn't know which language the target text is in, i.e. it always says that the target text is one of the supplied references' languages.
@@ -238,18 +239,18 @@ We opted for this formula since it has very accelerated growth in the beginning 
 \subsection{Locate lang}
 \label{subsec:methodology_locate_lang}
 
-The \texttt{locate_lang} script is comparatively more complex than \texttt{find_lang}.
+The \texttt{locate\_lang} script is comparatively more complex than \texttt{find\_lang}.
 Instead of identifying the language of the target overall, it attempts to identify which segments of text are written in one of the languages from the bank of references.
-Additionally, \texttt{locate_lang} can also identify segments of text on which it can't assign a language from the references, and as such takes into account the absolute compression performance of the \texttt{lang} program.
+Additionally, \texttt{locate\_lang} can also identify segments of text on which it can't assign a language from the references, and as such takes into account the absolute compression performance of the \texttt{lang} program.
 
 To do this, analysis is performed on the reported information content at each position in the target text.
 We require this data for each reference.
 This is obtained by running the lang program for each reference using the machine verbose mode \texttt{-v m}, which outputs all this information into a binary file in disk.
 After all these results are saved, they are read from disk and analysis is performed by the script.
 
-Contrary to the \texttt{find_lang} script, the \texttt{locate_lang} script caches the results of the \texttt{lang} model executions.
-This was done to speed up analysis since the processing of \texttt{locate_lang} itself contains many different parameters, and so we can avoid recalculating all necessary information in every run of the script if we only want to adjust the result processing and not the \texttt{lang} model parameters.
-This contrasts with the \texttt{find_lang} script, whose processing doesn't have any parameters, requiring only parameters to the lang model.
+Contrary to the \texttt{find\_lang} script, the \texttt{locate\_lang} script caches the results of the \texttt{lang} model executions.
+This was done to speed up analysis since the processing of \texttt{locate\_lang} itself contains many different parameters, and so we can avoid recalculating all necessary information in every run of the script if we only want to adjust the result processing and not the \texttt{lang} model parameters.
+This contrasts with the \texttt{find\_lang} script, whose processing doesn't have any parameters, requiring only parameters to the lang model.
 The cached results keep track of which target file, which references and which parameters were passed to the \texttt{lang} program.
 
 The information at each target step for every reference is saved in a NumPy matrix $M$, with a row for each language reference and a column for each position in the target text.
@@ -292,11 +293,11 @@ An example of the frequencies composing the target data and the corresponding do
 
 With the matrix $M$ representing the information at each step for every reference, we determine for each column, i.e. position in the target text, which row provides the minimum amount of information, that is which reference compressed the target symbol the best.
 However, we don't consider all kinds of minimum values.
-Since for \texttt{locate_lang} we want to identify sections of text that we deem unknown, i.e. they likely aren't related to any of the references, then we have to consider some kind of thresholds that the minimum values have to surpass to be truly accepted.
+Since for \texttt{locate\_lang} we want to identify sections of text that we deem unknown, i.e. they likely aren't related to any of the references, then we have to consider some kind of thresholds that the minimum values have to surpass to be truly accepted.
 
 For this we considered two thresholds, acting simultaneously:
 \begin{itemize}
-    \item minimum threshold: the absolute minimum value should not be larger than a given fraction of the second minimum. This threshold was implemented to disregard sections where there is confusion between more than two references. This idea is similar to the \textit{confidence} metric calculated for \texttt{find_lang} in section \ref{subsec:methodology_find_lang}.
+    \item minimum threshold: the absolute minimum value should not be larger than a given fraction of the second minimum. This threshold was implemented to disregard sections where there is confusion between more than two references. This idea is similar to the \textit{confidence} metric calculated for \texttt{find\_lang} in section \ref{subsec:methodology_find_lang}.
     \item static threshold: the absolute minimum value should not be larger than a given static threshold in bits. With this threshold, we disregard sections of text where the compression was not sufficient enough to consider that a reference truly represented the target language.
     This threshold is defined in terms of the cardinality of the target alphabet.
     More precisely, the static threshold $S$ in bits is given by the formula:
@@ -334,22 +335,22 @@ To test the performance of the model and the scripts implemented in this assignm
 these being: Bulgarian, Czech, Danish, German, Greek, English, Spanish, Estonian, Finnish, French, Hungarian, Italian, Lithuanian, Latvian, Dutch, Polish, Portuguese, Romanian, Slovak, Slovenian and Swedish.
 These reference texts were obtained from the Language-Aware String Extractor Files repository \cite{references:source}.
 
-For the target texts, we used a set of texts in the same languages as the reference texts, plus a Chinese text, but with different content, which were mainly used to test the \texttt{find_lang} script.
-And finally, to test the \texttt{locate_lang} script, we used the following target files:
+For the target texts, we used a set of texts in the same languages as the reference texts, plus a Chinese text, but with different content, which were mainly used to test the \texttt{find\_lang} script.
+And finally, to test the \texttt{locate\_lang} script, we used the following target files:
 
 \begin{itemize}
-    \item \textit{all\_languages.txt}: concatenation of the previous target files used for the \texttt{find_lang} script, including the Chinese language at the end.
-    \item \textit{all\_languages\_random.txt}: variation of \textit{all_languages.txt} with the rows shuffled.
+    \item \textit{all\_languages.txt}: concatenation of the previous target files used for the \texttt{find\_lang} script, including the Chinese language at the end.
+    \item \textit{all\_languages\_random.txt}: variation of \textit{all\_languages.txt} with the rows shuffled.
     \item \textit{dog.txt}: concatenation of small sentences and paragraphs of Wikipedia's ``Dog'' page in different languages \cite{wiki:dog}. This does not cover all the reference languages, but includes Chinese, and was mainly conceived to contrast \textit{all\_languages.txt} in that each language segment is relatively small, and so language transitions are performed more often.
 \end{itemize}
 
-The model's classification accuracy was measured for both the \texttt{find_lang} and \texttt{locate_lang} scripts, on the texts \textit{all\_languages.txt} and \textit{dog.txt}, for which we had the correct classification result.
+The model's classification accuracy was measured for both the \texttt{find\_lang} and \texttt{locate\_lang} scripts, on the texts \textit{all\_languages.txt} and \textit{dog.txt}, for which we had the correct classification result.
 These two targets were used additionally to check whether the length of each segment in the target text influences the model's clasification performance, where \textit{dog.txt} has smaller language segments than \textit{all\_languages.txt}.
 
 \subsection{Find lang}
 \label{subsec:results_find_lang}
 
-To obtain the accuracy of the \texttt{find_lang} script, we used the individual language texts and compared the result of the script with the actual language of the text.
+To obtain the accuracy of the \texttt{find\_lang} script, we used the individual language texts and compared the result of the script with the actual language of the text.
 Two runs were performed for each language file, one which executed the \texttt{lang} model using its default parameters, such as using a frequency base distribution,
 and another one which used the finite-context model, instead of the other two options for probability distributions, along with the other default parameters.
 
@@ -367,7 +368,7 @@ For the second run, with the finite-context model, the script also correctly ide
 
 To differentiate between the two approaches, we compared the confidence value given by equation \ref{eq:find_lang_confidence} presented in section \ref{subsec:methodology_find_lang}
 
-Tables \ref{tab:find_lang_default_confidence} and \ref{tab:find_lang_finite_context_confidence} show the confidence results of the \texttt{find_lang} script for the default parameters and the finite-context model, respectively.
+Tables \ref{tab:find_lang_default_confidence} and \ref{tab:find_lang_finite_context_confidence} show the confidence results of the \texttt{find\_lang} script for the default parameters and the finite-context model, respectively.
 
 \begin{table}
     \centering
@@ -454,7 +455,7 @@ With these results we can conclude that the probability distribution based on th
 \subsection{Locate lang}
 \label{subsec:results_locate_lang}
 
-For \texttt{locate_lang}, we created plots evaluating the reported information at each position in the target files \textit{all\_languages.txt} and \textit{all\_languages\_random.txt} using different \texttt{lang} model configurations, to check the effect that each parameter has in the overall language segmentation process.
+For \texttt{locate\_lang}, we created plots evaluating the reported information at each position in the target files \textit{all\_languages.txt} and \textit{all\_languages\_random.txt} using different \texttt{lang} model configurations, to check the effect that each parameter has in the overall language segmentation process.
 We also evaluated the classification accuracy for the target files \textit{all\_languages.txt} and \textit{dog.txt}, using different \texttt{lang} model configurations and different result processing parameters for the script itself.
 
 Unless stated otherwise, for all plots showing the reported information at each target position, the script and \texttt{lang} model parameters are the default ones.
@@ -476,14 +477,14 @@ The same difficulty is seen in this figure: we can't define a static threshold w
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-p_u.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-p_u.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, uniform distribution.}
     \label{fig:all_languages_p_u}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-p_u.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-p_u.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, uniform distribution.}
     \label{fig:all_languages_random_p_u}
 \end{figure}
@@ -506,14 +507,14 @@ due to the constant change of languages.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-p_f.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-p_f.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, frequency distribution.}
     \label{fig:all_languages_p_f}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-p_f.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-p_f.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, frequency distribution.}
     \label{fig:all_languages_random_p_f}
 \end{figure}
@@ -674,14 +675,14 @@ For the \textit{all\_languages\_random.txt} file we can see in the figure \ref{f
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_o.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-r_o.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, oldest pointer first.}
     \label{fig:all_languages_r_o}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_o.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-r_o.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, oldest pointer first.}
     \label{fig:all_languages_random_r_o}
 \end{figure}
@@ -695,14 +696,14 @@ Technically, since the reference has already been trained on and there may not b
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_n.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-r_n.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, newest pointer first.}
     \label{fig:all_languages_r_n}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_n.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-r_n.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, newest pointer first.}
     \label{fig:all_languages_random_r_n}
 \end{figure}
@@ -715,14 +716,14 @@ Like the previous approaches, we can still distinguish the different languages, 
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_m.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-r_m.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, most common prediction.}
     \label{fig:all_languages_r_m}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_m.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-r_m.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, most common prediction.}
     \label{fig:all_languages_random_r_m}
 \end{figure}
@@ -736,14 +737,14 @@ These results can be seen in the figures \ref{fig:all_languages_r_c} and \ref{fi
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_c:100.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-r_c:100.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, most common prediction bounded.}
     \label{fig:all_languages_r_c}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_c:100.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-r_c:100.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, most common prediction bounded.}
     \label{fig:all_languages_random_r_c}
 \end{figure}
@@ -758,14 +759,14 @@ In the figures \ref{fig:all_languages_t_n} and \ref{fig:all_languages_random_t_n
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_n:0.5.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-t_n:0.5.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, static threshold.}
     \label{fig:all_languages_t_n}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_n:0.5.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-t_n:0.5.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, static threshold.}
     \label{fig:all_languages_random_t_n}
 \end{figure}
@@ -782,14 +783,14 @@ show information values which are slightly higher when observing the minimum inf
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_f:9.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-t_f:9.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, successive fails threshold.}
     \label{fig:all_languages_t_f}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_f:9.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-t_f:9.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, successive fails threshold.}
     \label{fig:all_languages_random_t_f}
 \end{figure}
@@ -805,14 +806,14 @@ This makes this strategy the best one when choosing the threshold to switch poin
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_c:0.01.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-t_c:0.01.png}
     \caption{Information at each step for each language for \textit{all\_languages.txt}, rate of change threshold.}
     \label{fig:all_languages_t_c}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_c:0.01.png}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages_random/-t_c:0.01.png}
     \caption{Information at each step for each language for \textit{all\_languages\_random.txt}, rate of change threshold.}
     \label{fig:all_languages_random_t_c}
 \end{figure}
@@ -820,7 +821,7 @@ This makes this strategy the best one when choosing the threshold to switch poin
 \subsubsection{Processing parameters - Frequency dropoff}
 \label{subsubsec:results_locate_lang_frequency_dropoff}
 
-In terms of the \texttt{locate_lang} processing parameters, figures \ref{fig:ll_f_all_languages} and \ref{fig:ll_f_dog} present the effect of the frequency dropoff, i.e. the strength of the low-pass filter, for the \textit{all\_languages.txt} and \textit{dog.txt} target files on the classification accuracy.
+In terms of the \texttt{locate\_lang} processing parameters, figures \ref{fig:ll_f_all_languages} and \ref{fig:ll_f_dog} present the effect of the frequency dropoff, i.e. the strength of the low-pass filter, for the \textit{all\_languages.txt} and \textit{dog.txt} target files on the classification accuracy.
 As can be seen from the plots, there is an ideal range of values for the frequency dropoff, below which the accuracy is very low and above which the accuracy doesn't increase.
 In this case, we can notice that a frequency dropoff value of around 50 already provides great classification accuracy.
 
@@ -831,14 +832,14 @@ As such, it's understandable that a low-pass filter heavily improves the classif
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/all_languages/ll-f.png}
+    \includegraphics[width=0.85\textwidth]{../results/all_languages/ll-f.png}
     \caption{Accuracy with respect to \texttt{locate\_lang}'s frequency dropoff value, on \textit{all\_languages.txt}.}
     \label{fig:ll_f_all_languages}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/dog/ll-f.png}
+    \includegraphics[width=0.85\textwidth]{../results/dog/ll-f.png}
     \caption{Accuracy with respect to \texttt{locate\_lang}'s frequency dropoff value, on \textit{dog.txt}.}
     \label{fig:ll_f_dog}
 \end{figure}
@@ -859,14 +860,14 @@ In these transitional sections, the program labels the symbols as unknown since 
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/all_languages/ll-m.png}
+    \includegraphics[width=0.85\textwidth]{../results/all_languages/ll-m.png}
     \caption{Accuracy with respect to \texttt{locate\_lang}'s minimum threshold, on \textit{all\_languages.txt}.}
     \label{fig:ll_m_all_languages}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/dog/ll-m.png}
+    \includegraphics[width=0.85\textwidth]{../results/dog/ll-m.png}
     \caption{Accuracy with respect to \texttt{locate\_lang}'s minimum threshold, on \textit{dog.txt}.}
     \label{fig:ll_m_dog}
 \end{figure}
@@ -874,8 +875,8 @@ In these transitional sections, the program labels the symbols as unknown since 
 \subsubsection{Processing parameters - Static threshold}
 \label{subsubsec:results_locate_lang_static_threshold_processing}
 
-The \texttt{locate_lang}'s static threshold defines a maximum value below which a reference's reported information should be to be considered.
-More specifically, the parameter value passed to \texttt{locate_lang} defines the denominator $\gamma$ in equation \ref{eq:locate_lang_static_threshold}, described in section \ref{subsec:methodology_locate_lang}.
+The \texttt{locate\_lang}'s static threshold defines a maximum value below which a reference's reported information should be to be considered.
+More specifically, the parameter value passed to \texttt{locate\_lang} defines the denominator $\gamma$ in equation \ref{eq:locate_lang_static_threshold}, described in section \ref{subsec:methodology_locate_lang}.
 We tested different values of $\gamma$ above $1.0$.
 As previously explained, $\gamma = 1.0$ defines a static threshold that demands a compression performance at least better than reporting a uniform distribution at each step.
 In practice, if we consider for instance the uniform distribution and the probability distribution based on a finite-context model, then $\gamma = 1.0$ is as if no threshold was applied at all.
@@ -895,14 +896,14 @@ At this point, it's better to tune this value such that it properly represents t
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/all_languages/ll-s.png}
+    \includegraphics[width=0.85\textwidth]{../results/all_languages/ll-s.png}
     \caption{Accuracy with respect to \texttt{locate\_lang}'s static threshold, on \textit{all\_languages.txt}.}
     \label{fig:ll_s_all_languages}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/dog/ll-s.png}
+    \includegraphics[width=0.85\textwidth]{../results/dog/ll-s.png}
     \caption{Accuracy with respect to \texttt{locate\_lang}'s static threshold, on \textit{dog.txt}.}
     \label{fig:ll_s_dog}
 \end{figure}
@@ -984,7 +985,7 @@ confidence value of $0.0\%$ for the same text, which is the expected result, and
 \subsection{Locate lang}
 \label{subsec:conclusion:locate_lang}
 
-In the case of the \texttt{locate_lang} script, the results were also very positive overall, with the model being able to correctly identify the language of the sections of the target texts,
+In the case of the \texttt{locate\_lang} script, the results were also very positive overall, with the model being able to correctly identify the language of the sections of the target texts,
 with special emphasis when using the finite-context approach, which had a bigger difference in reported information between the correct language and the second most probable language.
 
 By testing the different parameters, we verified that most of the \texttt{lang} parameters had a very small impact on the results, due to the different nature of the objective between this
