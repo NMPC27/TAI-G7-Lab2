@@ -194,7 +194,7 @@ def print_labeled_target_terminal(minimum_references: npt.ArrayLike, minimum_ref
 
     print('Legend:')
     for reference, color in color_mapping.items():
-        print(color.background() + data_to_filename[str(reference)] + ColorCode.END.value, end=' ')
+        print(color.background() + data_to_filename[reference] + ColorCode.END.value, end=' ')
     print()
 
 
