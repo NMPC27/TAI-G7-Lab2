@@ -21,9 +21,9 @@ lista = [
 ]
 
 lista_ll = [
-    ('-m {}', np.arange(1.0, 0.79, -0.01)),
-    ('-s {}', np.arange(1.0, 2.05, 0.05)),
-    ('-f {}', np.arange(100, 2100, 100)),
+    # ('-m {}', np.arange(1.0, 0.79, -0.01)),
+    # ('-s {}', np.arange(1.0, 2.05, 0.05)),
+    ('-f {}', np.arange(0, 2100, 100)),
 ]
 
 file_target = "all_languages"

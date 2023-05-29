@@ -1,3 +1,4 @@
+Classification accuracy: 43.317230%
 Classification accuracy: 94.471283%
 Classification accuracy: 92.163178%
 Classification accuracy: 88.835212%
