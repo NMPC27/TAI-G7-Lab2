@@ -15,7 +15,7 @@ target = args.target
 
 for fname in os.listdir(folder):
     fbase, ext = os.path.splitext(fname)
-    if ext == '.txt':
+    if ext == '.txt' and fbase[0] == '-':
         fpath = os.path.join(folder, fname)
 
         with open(fpath, 'rb') as f:
@@ -23,4 +23,5 @@ for fname in os.listdir(folder):
         
         process = subprocess.run(['python3', 'scripts/evaluate.py', target], input=evaluate_output, stdout=subprocess.PIPE)
 
-        print(f'{fbase:<12}', process.stdout.decode().split(': ')[1].strip())
+        acc = process.stdout.decode().split(': ')[1].strip()
+        print(f'{fbase:<12}', acc)

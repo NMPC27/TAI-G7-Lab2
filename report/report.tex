@@ -47,6 +47,8 @@ This is done by saving which language has the lowest information for each step/c
 In this report we will present the methodology used to implement the \texttt{lang} model, the \texttt{find\_lang} and \texttt{locate\_lang} scripts in detail in section \ref{sec:methodology}, and the results obtained by testing the scripts with different target texts in section \ref{sec:results}.
 And finally, in section \ref{sec:conclusion}, we will present the conclusions of this assignment.
 
+All code and files used for training and testing are present in the repository\footnote{\url{https://github.com/NMPC27/TAI-G7-Lab2}}.
+
 \section{Methodology}
 \label{sec:methodology}
 
@@ -89,7 +91,7 @@ For the \texttt{lang} program, the following changes were done from the first as
     \item Repeat-like wrapping for the past initialization:
     Since we want to start training/copying since the very first symbol in the reference/target message, we need to consider some kind of context when at that symbol, i.e. we need to somehow train and test the model using the first $k$ symbols, even if we require $k$ symbols of previous context for each of them, which doesn't naturally exist.
     For the first assignment, the strategy that we followed to solve this problem was to initiale this $k$-sized past with the most frequent symbol in the entire message.
-    This was an easy solution to implement, but it's much less appropriate when applied for the specific use case of this assignment.
+    This was an easy solution to implement, but it is much less appropriate when applied for the specific use case of this assignment.
     Since we are dealing with natural language text, it doesn't make sense to incorporate $k$ repeated instances of a single letter, as that will definitely not occur for a reasonable value of $k$.
     For the first assignment we mainly dealt with a chromossome sequence, but in this case this issue becomes more obvious.
 
@@ -144,7 +146,7 @@ Therefore, after performing the initial pass over the target text to determine i
 These new symbols, that didn't previously have counts, will have their counts initialized with 1 to avoid reporting an infinite amount of information for them.
 Do note that, after passing over the target text, the counts of the symbols both in the reference text and target text are not updated, i.e. only counts actually done on the reference text are used.
 This is done because it doesn't make much sense to include the symbol counts on the target text when the objective of the program is to compress solely based on a model trained on a reference text.
-Additionally, we mainly want to use this program to compare compression of one same target text using many different references, and so it's not relevant to include the target symbol counts since they would be the same between all runs.
+Additionally, we mainly want to use this program to compare compression of one same target text using many different references, and so it is not relevant to include the target symbol counts since they would be the same between all runs.
 
 Another note worth making is that most copy pointer managers, which are the copy model components responsible for determining which copy pointer to use at each context, provide the exact same copy pointer repositioning result for a given context, independently of when it is done while predicting.
 This is because the array of copy pointers to choose from does not change while traversing the target text anymore, only during training on the reference.
@@ -328,9 +330,6 @@ In the end, the following processing arguments are accepted:
 \section{Results}
 \label{sec:results}
 
-% TODO: talk about the compression results as well: why is the number of reported total bits and mean bits per symbol so low? It's probably because we are not accounting for the space required to store the reference text, which was necessary to compress the target to an absurdly low number of bits.
-% TODO: talk about experimental method: how and which target texts were used and evaluted?
-
 To test the performance of the model and the scripts implemented in this assignment, we used a set of reference texts covering 20 different languages,
 these being: Bulgarian, Czech, Danish, German, Greek, English, Spanish, Estonian, Finnish, French, Hungarian, Italian, Lithuanian, Latvian, Dutch, Polish, Portuguese, Romanian, Slovak, Slovenian and Swedish.
 These reference texts were obtained from the Language-Aware String Extractor Files repository \cite{references:source}.
@@ -467,8 +466,8 @@ Unless stated otherwise, for all plots showing the reported information at each 
 By using this approach, we can see very clearly the different languages in figure \ref{fig:all_languages_p_u} of file \textit{all\_languages.txt},
 because the reported information of the correct language is much lower than all the others.
 But by using this approach, we have more difficulty detecting unknown languages (languages that are not in the references).
-Because even if we define the static threshold at the lowest entropy point of all the correct languages,
-it will also detect the last chunk of text as French, which is wrong, the last chunk of text in the file is Chinese. % TODO: what is the "lowest entropy point"? What does the "the last chunk of text in the file is Chinese" part mean?
+Because even if we define the static threshold at the lowest information values of all the correct languages,
+it will also detect the last chunk of text as French, which is wrong, as the last chunk of text in the file is Chinese.
 
 For \textit{all\_languages\_random.txt}, we can distinguish the languages in figure \ref{fig:all_languages_random_p_u}.
 We can see the valleys very clearly and infer the language using that information.
@@ -495,7 +494,7 @@ The same difficulty is seen in this figure: we can't define a static threshold w
 Using this approach, we can see the different languages in figure \ref{fig:all_languages_p_f} of file \textit{all\_languages.txt}, although it produces a very different plot
 compared to the uniform distribution approach.
 
-It's still possible to distinguish the languages in figure \ref{fig:all_languages_random_p_f} of file \textit{all\_languages\_random.txt}, but it is harder to do so,
+It is still possible to distinguish the languages in figure \ref{fig:all_languages_random_p_f} of file \textit{all\_languages\_random.txt}, but it is harder to do so,
 and another difference is between Bulgarian and Greek languages to the other languages. These have a much higher reported information than the others, due to the fact that these
 languages use a completely different alphabet than the others.
 
@@ -529,7 +528,7 @@ The results for both files are shown in figures \ref{fig:all_languages_p_c} and 
 
 By verifiying the results for the context size in figure \ref{fig:all_languages_p_c}, we can see that the finite-context model produces a much better result than the other probability distribution approaches,
 because it is able to clearly distinguish the correct language (the minimum value) from the second best candidate.
-When increasing $k$, this difference becomes even more clear, as seen in figures \ref{fig:all_languages_p_c:1:3} and \ref{fig:all_languages_p_c:1:6}, % TODO: is it 3 and 6 or 6 and 9?
+When increasing $k$, this difference becomes even more clear, as seen in figures \ref{fig:all_languages_p_c:1:3} and \ref{fig:all_languages_p_c:1:6},
 although increases the overall reported information per language, which makes the static threshold too low to detect the correct language in each section.
 
 This problem can also be seen in the random file, in figure \ref{fig:all_languages_random_p_c}, where the threshold line is too low to detect the correct language in each section when the context size
@@ -670,7 +669,6 @@ So these results will be mostly similar with the results shown for the frequency
 
 In this approach we can still distinguish the different languages, but not as clearly as some of the previous approaches.
 In figure \ref{fig:all_languages_r_o} we can see that the reported information by the languages are mostly the same, excluding Greek and Bulgarian.
-One of the positives of this approach is that we can identify much more easily an unknown language (languages that are not in the references) than in some of the previous approaches. % TODO: we can???
 For the \textit{all\_languages\_random.txt} file we can see in the figure \ref{fig:all_languages_r_o}, that the same behavior is seen, but now with slightly more differences between languages.
 
 \begin{figure}
@@ -779,7 +777,7 @@ In this case, we used the value that we used in the previous assignment that pro
 
 The results are shown in figures \ref{fig:all_languages_t_f} and \ref{fig:all_languages_random_t_f}.
 Interestingly, we can see that the results, although similar to the use of the static threshold,
-show information values which are slightly higher when observing the minimum information values, corresponding to the predicted language for the section. % TODO: what does this mean?
+show that the minimum information values are slightly higher, which correspond to the predicted language for the section.
 
 \begin{figure}
     \centering
@@ -818,6 +816,117 @@ This makes this strategy the best one when choosing the threshold to switch poin
     \label{fig:all_languages_random_t_c}
 \end{figure}
 
+
+\subsubsection{Other parameters: Pattern size - k}
+\label{subsubsec:results_locate_lang_pattern_size}
+
+We also analyzed the effect of the context/pattern size $k$ on the language classification.
+As we can see in figures \ref{fig:all_languages_k_3} and \ref{fig:all_languages_k_6} and \ref{fig:all_languages_k_9} 
+the information values for the candidate language do decrease with the increase of the pattern size, but not in every case in the text file.
+This change in information values is highly dependent on the text file and its language, although it seems better to use a bigger pattern size
+because it also helps garantee that other languages are not possible candidates.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-k_3_-a_1.png}
+    \caption{Information at each step for each language for \textit{all\_languages.txt}, Pattern size 3.}
+    \label{fig:all_languages_k_3}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-k_6_-a_1.png}
+    \caption{Information at each step for each language for \textit{all\_languages.txt}, Pattern size 6.}
+    \label{fig:all_languages_k_6}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-k_9_-a_1.png}
+    \caption{Information at each step for each language for \textit{all\_languages.txt}, Pattern size 9.}
+    \label{fig:all_languages_k_9}
+\end{figure}
+
+
+\subsubsection{Other parameters: Alpha - a}
+\label{subsubsec:results_locate_lang_alpha}
+
+We also analyzed the effect of the alpha parameter on the language classification.
+By looking at the figures \ref{fig:all_languages_a0.5}, \ref{fig:all_languages_a1} and \ref{fig:all_languages_a10} we can see that the alpha parameter doesn't have a big impact on the results.
+The only difference we can see is that the information values are slightly higher when using a bigger alpha value, which is expected since the alpha parameter is used to smoothen the probability distribution.
+The exception are the values lower than 1, where the information values slightly change but do seemingly shift up or down like in the other cases.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-k_3_-a_0.5.png}
+    \caption{Information at each step for each language for \textit{all\_languages.txt}, Alpha 0.5 and K=3.}
+    \label{fig:all_languages_a0.5}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-k_3_-a_1.png}
+    \caption{Information at each step for each language for \textit{all\_languages.txt}, Alpha 1 and K=3.}
+    \label{fig:all_languages_a1}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/-k_3_-a_10.png}
+    \caption{Information at each step for each language for \textit{all\_languages.txt}, Alpha 10 and K=3.}
+    \label{fig:all_languages_a10}
+\end{figure}
+
+\subsubsection{Accuracy dependent on lang model parameters}
+\label{subsubsec:results_locate_lang_accuracy}
+
+In this section we will analyze the accuracy of the \texttt{locate\_lang} script for different values of the \texttt{lang} model parameters.
+The results are presented in table \ref{tab:locate_lang_accuracy}.
+
+All the results are above 80\% accuracy, except for the last 2. This can be explained due to the fact that the static threshold is too low
+although the difference between the information values of the most probable language and the second most probable language is still high like the other parameters.
+If the static threshold wasn't taken into account, the accuracy of these cases would be much higher, probably close to the other cases. 
+When using the finite-context model with small $\alpha$ and $k_f$, we notice a sizeable improvement in classification accuracy, with accuracy around 98\%.
+
+\begin{tabular}{|c|c|}
+    \hline
+    \textbf{Parameter} & \textbf{Accuracy (\%)} \\ \hline
+    $p_c:10:3$ & 98.608579 \\ \hline
+    $p_c:1:3$ & 98.572123 \\ \hline
+    $t_c:0.01$ & 92.629724 \\ \hline
+    $t_n:0.5$ & 91.703123 \\ \hline
+    $k_3\_-a_{25}$ & 91.526917 \\ \hline
+    $k_3\_-a_{50}$ & 91.526917 \\ \hline
+    $k_3\_-a_{100}$ & 91.520841 \\ \hline
+    $k_3\_-a_{10}$ & 91.511727 \\ \hline
+    $k_3\_-a_5$ & 91.359825 \\ \hline
+    $k_9\_-a_1$ & 91.043869 \\ \hline
+    $r_n$ & 90.664115 \\ \hline
+    $r_o$ & 90.661077 \\ \hline
+    $r_m$ & 90.639810 \\ \hline
+    $p_f$ & 90.639810 \\ \hline
+    $r_c:100$ & 90.636772 \\ \hline
+    $k_9\_-a_{0.5}$ & 90.980070 \\ \hline
+    $k_9\_-a_5$ & 90.402844 \\ \hline
+    $t_f:9$ & 90.144611 \\ \hline
+    $k_6\_-a_{0.5}$ & 90.023089 \\ \hline
+    $k_9\_-a_{10}$ & 89.865111 \\ \hline
+    $k_3\_-a_1$ & 89.755742 \\ \hline
+    $k_6\_-a_5$ & 89.011423 \\ \hline
+    $k_9\_-a_{25}$ & 88.795722 \\ \hline
+    $k_9\_-a_{50}$ & 88.546603 \\ \hline
+    $k_9\_-a_{100}$ & 88.403816 \\ \hline
+    $k_6\_-a_{10}$ & 88.139507 \\ \hline
+    $k_6\_-a_{25}$ & 86.374408 \\ \hline
+    $k_6\_-a_{50}$ & 85.496415 \\ \hline
+    $k_6\_-a_{100}$ & 85.037672 \\ \hline
+    $p_c:100:3$ & 84.062462 \\ \hline
+    $p_c:1:9$ & 3.821850 \\ \hline
+    $p_u$ & 1.108883 \\ \hline
+    \label{tab:locate_lang_accuracy}
+    \caption{Accuracy of the \texttt{locate\_lang} script for different values of the parameters.}
+\end{tabular}
+
 \subsubsection{Processing parameters - Frequency dropoff}
 \label{subsubsec:results_locate_lang_frequency_dropoff}
 
@@ -828,7 +937,7 @@ In this case, we can notice that a frequency dropoff value of around 50 already 
 Note that if the frequency dropoff is 0, then it is equivalent to having no low-pass filter applied.
 Therefore, we can see the heavy influence of the low-pass filter, as applying just some filtering brings the accuracy from $40\%$ without any filter to above $90\%$.
 As explained in section \ref{subsec:methodology_locate_lang}, the copy model's behaviour is very erratic, with spurious and short copies throughout the target text.
-As such, it's understandable that a low-pass filter heavily improves the classification accuracy, since these spikes of information are attenuated and so we can better study trends over larger segments of the target text instead of symbol-by-symbol.
+As such, it is understandable that a low-pass filter heavily improves the classification accuracy, since these spikes of information are attenuated and so we can better study trends over larger segments of the target text instead of symbol-by-symbol.
 
 \begin{figure}
     \centering
@@ -892,7 +1001,7 @@ Since both targets have a section in Chinese, which does not have a respective r
 The effect is more pronounced in \textit{dog.txt} since the portion that Chinese occupies in the file is larger than in \textit{all\_languages.txt}.
 
 Additionally, if $\gamma$ increases too much, then we are demanding a better performance from the copy model.
-At this point, it's better to tune this value such that it properly represents the compression performance of the copy model, which we found to be around $1.2$.
+At this point, it is better to tune this value such that it properly represents the compression performance of the copy model, which we found to be around $1.2$.
 
 \begin{figure}
     \centering
@@ -962,7 +1071,8 @@ reference files. The size of the reference was varied from 10\% to 100\% with in
 
 We can also conclude that the accuracy of the language classification is affected by the size of the target file, 
 a bigger target file will have a higher accuracy.
-This happens because the model has more chances to hit the correct language, since the target is bigger. % TODO: how so?
+This happens because the language segments are bigger for \textit{all_languages.txt}, giving more time for the model to find a context with a past from which to start copying.
+In \textit{dog.txt}, the segments are shorter, requiring the copy model to transition between languages more often.
 
 \section{Conclusion}
 \label{sec:conclusion}
@@ -991,6 +1101,8 @@ with special emphasis when using the finite-context approach, which had a bigger
 By testing the different parameters, we verified that most of the \texttt{lang} parameters had a very small impact on the results, due to the different nature of the objective between this
 assignment and the previous one. The only parameter that had a significant impact on the results was the threshold strategy, with the rate of change threshold strategy producing
 slightly better results than the other two strategies, by creating a slightly bigger difference between the reported information values of the correct language and the second most probable language.
+
+In terms of the script's processing parameters, we found that the minimum threshold did not improve the classification accuracy at all, and that both the $\gamma$ parameter for the static threshold and the frequency dropoff values had optimal values that provided local maximums in terms of classification accuracy.
 
 \section{References}
 \bibliography{refs}
