@@ -37,13 +37,13 @@ If using multiple references, we can comparatively identify a language, by check
 One of the other new features implemented in the lang model is the ability to use a finite-context model for the probabilities of non-hit symbols, instead of using the uniform and frequency probability distributions.
 
 With the new model implemented, two other scripts were developed to test the performance of the model and obtain the language prediction in an entire text file or in specific sections of a text.
-The first script is called find_lang, which receives a target text and uses all the existing references to predict the language of the target text, returning the language with the highest probability of being the target's language.
+The first script is called \verb|find_lang|, which receives a target text and uses all the existing references to predict the language of the target text, returning the language with the highest probability of being the target's language.
 This is done by executing the lang model for each reference text and comparing the total information obtained for each language, returning the reference language with the lowest information.
 
-The second script is called locate_lang, which receives a target text and, like the find_lang script, executes the lang model for each reference text, but instead of returning the language with the lowest information, it returns the language with the lowest information for each section of the target text.
+The second script is called \verb|locate_lang|, which receives a target text and, like the \verb|find_lang| script, executes the lang model for each reference text, but instead of returning the language with the lowest information, it returns the language with the lowest information for each section of the target text.
 This is done by saving which language has the lowest information for each step/character of the target text, and then checking the intervals where the language is the same, returning the language with the lowest information for each interval.
 
-In this report we will present the methodology used to implement the lang model, the find_lang and locate_lang scripts, in more detail in section \ref{sec:methodology}, and the results obtained by testing the scripts with different target texts in section \ref{sec:results}.
+In this report we will present the methodology used to implement the lang model, the \verb|find_lang| and \verb|locate_lang| scripts, in more detail in section \ref{sec:methodology}, and the results obtained by testing the scripts with different target texts in section \ref{sec:results}.
 And finally, in section \ref{sec:conclusion}, we will present the conclusions of this assignment.
 
 \section{Methodology}
@@ -52,13 +52,13 @@ And finally, in section \ref{sec:conclusion}, we will present the conclusions of
 For the development of the different components, we utilized different approaches.
 The lang model was written in C++, extending and improving the copy model program developed in the previous assignment.
 
-However, the find_lang and locate_lang scripts were developed in Python.
+However, the \verb|find_lang| and \verb|locate_lang| scripts were developed in Python.
 These scripts essentially perform many independent runs of the lang model using different references, and parse the output as they desire.
 Since practically all of the heavy processing is performed by the lang model, we can afford the loss of performance that running a script in Python entails in turn for the much increased development simplicity.
 In fact, in practice we noticed that most of the execution time spent on these scripts is in the lang model, as the result processing in Python is relatively simple.
 For both scripts, parameters of the lang model can be specified.
 
-Even then, the find_lang and locate_lang take too much time waiting for the results of the lang model.
+Even then, the \verb|find_lang| and \verb|locate_lang| take too much time waiting for the results of the lang model.
 Therefore, to ease this large bottleneck, we added support for multiprocessing to both of these scripts.
 Since different lang models with different references can be run completely independently, without any need of interprocess communication, we can easily launch multiple processes.
 The ideal option would be to integrate multithreading directly into the lang model program itself, in C++, which allows greater memory efficiency as the target text doesn't have to be stored in memory multiple times, one for each process.
@@ -155,16 +155,16 @@ As such, \verb|NextOldestCopyPointerManager| is the only manager whose behaviour
 \label{subsubsec:methodology_lang_model_verbose}
 
 The lang program was required to output the total number of bits estimated to be necessary to compress the target text based on the reference text.
-To simplify output analysis by the find_lang script, we added the minimal verbose mode specified with the parameter \verb|-v o|, which simply prints to standard output nothing more than the total number of bits required for compression.
+To simplify output analysis by the \verb|find_lang| script, we added the minimal verbose mode specified with the parameter \verb|-v o|, which simply prints to standard output nothing more than the total number of bits required for compression.
 
-Additionally, for the locate_lang script, we needed to know what was the reported information content in bits for each symbol in the message, to correctly identify in which language was each text segment.
+Additionally, for the \verb|locate_lang| script, we needed to know what was the reported information content in bits for each symbol in the message, to correctly identify in which language was each text segment.
 Therefore, we modified the previous ``machine'' verbose mode, specified with the parameter \verb|-v m|, which used to print the whole probability distribution in CSV format to standard output.
 This output was previously saved to disk using shell redirection, and since the CSV format was very wasteful in terms of space a lot of disk memory was necessary for these files.
 
 Since now we are only concerned with the probability of the actual symbol in the message, we only need one of those values of the probability distribution at every step.
 As such, we opted to instead of printing the floating-point probability values to standard output, to write them directly in sequence to a file in binary format.
 This allows for a densely-packed representation of the probability values over the message since no newlines or separators are used and the values are written in their full binary content instead of a character string representation in digits each occupying a byte, saving tremendously in space when compared with the previous assignment's approach.
-We can then load these values in a highly efficient manner from the locate_lang script using the NumPy library.
+We can then load these values in a highly efficient manner from the \verb|locate_lang| script using the NumPy library.
 Do note that these these floating-point values, declared as \verb|double|, are assumed to occupy 64 bits.
 
 Since the new ``machine'' verbose mode outputs the probabilities to a binary file, we added the possibility to declare to which file they are written, by specifying it as an ``option parameter'': \verb|-v m:X|, where \verb|X| is the path of the file.
@@ -239,18 +239,18 @@ We opted for this formula since it has very accelerated growth in the beginning 
 \subsection{Locate lang}
 \label{subsec:methodology_locate_lang}
 
-The locate_lang script is comparatively more complex than find_lang.
+The \verb|locate_lang| script is comparatively more complex than \verb|find_lang|.
 Instead of identifying the language of the target overall, it attempts to identify which segments of text are written in one of the languages from the bank of references.
-Additionally, locate_lang can also identify segments of text on which it can't assign a language from the references, and as such takes into account the absolute compression performance of the lang program.
+Additionally, \verb|locate_lang| can also identify segments of text on which it can't assign a language from the references, and as such takes into account the absolute compression performance of the lang program.
 
 To do this, analysis is done on the reported information content at each position in the target text.
 We require this data for each reference.
 This is obtained by running the lang program for each reference using the machine verbose mode \verb|-v m|, which outputs all this information into a binary file in disk.
 After all these results are saved, they are read from disk and analysis is performed by the script.
 
-Contrary to the find_lang script, the locate_lang script caches the results of the lang model executions.
-This was done to speed up analysis since the processing of locate_lang itself contains many different parameters, and so we can avoid recalculating all necessary information in every run of the script if we only want to adjust the result processing and not the lang model parameters.
-This contrasts with the find_lang script, whose processing doesn't have any parameters, requiring only parameters to the lang model.
+Contrary to the \verb|find_lang| script, the \verb|locate_lang| script caches the results of the lang model executions.
+This was done to speed up analysis since the processing of \verb|locate_lang| itself contains many different parameters, and so we can avoid recalculating all necessary information in every run of the script if we only want to adjust the result processing and not the lang model parameters.
+This contrasts with the \verb|find_lang| script, whose processing doesn't have any parameters, requiring only parameters to the lang model.
 The cached results keep track of which target file, which references and which parameters were passed to the lang program.
 
 The information at each target step for every reference is saved in a NumPy matrix $M$, with a row for each language reference and a column for each position in the target text.
@@ -268,17 +268,17 @@ An example of the frequencies composing the target data and the corresponding do
 \begin{figure}
     \centering
     \includegraphics[width=0.95\textwidth]{./images/low_pass_filter.png}
-    \caption{Example of the frequencies composing the compressed information of target ``all_languages_random.txt'' trained on the greek reference, with default lang model parameters and finite-context distribution with $k_f=6$. The exponential downscaling function applied to the frequencies is also shown on the right plot.}
+    \caption{Example of the frequencies composing the compressed information of target \textit{all\_languages\_random.txt} trained on the greek reference, with default lang model parameters and finite-context distribution with $k_f=6$. The exponential downscaling function applied to the frequencies is also shown on the right plot.}
     \label{fig:low_pass_filter}
 \end{figure}
 
 With the matrix $M$ representing the information at each step for every reference, we determine for each column, i.e. position in the target text, which row provides the minimum amount of information, that is which reference compressed the target symbol the best.
 However, we don't consider all kinds of minimum values.
-Since for locate_lang we want to identify sections of text that we deem unknown, i.e. they likely aren't related to any of the references, then we have to consider some kind of thresholds that the minimum values have to surpass to be truly accepted.
+Since for \verb|locate_lang| we want to identify sections of text that we deem unknown, i.e. they likely aren't related to any of the references, then we have to consider some kind of thresholds that the minimum values have to surpass to be truly accepted.
 
 For this we considered two thresholds:
 \begin{itemize}
-    \item minimum threshold: the absolute minimum value should not be larger than a given fraction of the second minimum. This threshold was implemented to disregard sections where there is confusion between more than two references. This idea is similar to the \textit{confidence} metric calculated for find_lang in section \ref{subsec:methodology_find_lang}.
+    \item minimum threshold: the absolute minimum value should not be larger than a given fraction of the second minimum. This threshold was implemented to disregard sections where there is confusion between more than two references. This idea is similar to the \textit{confidence} metric calculated for \verb|find_lang| in section \ref{subsec:methodology_find_lang}.
     \item static threshold: the absolute minimum value should not be larger than a given static threshold in bits. With this threshold, we disregard sections of text where the compression was not sufficient enough to consider that a reference truly represented the target language.
     This threshold is defined in terms of the cardinality of the target alphabet.
     More precisely, the static threshold $S$ in bits is given by the formula:
@@ -309,14 +309,14 @@ In the end, the following processing arguments are accepted:
         \centering
         \begin{subfigure}[b]{0.4\textwidth}
             \centering
-            \includegraphics[width=\textwidth]{/images/no_freq_dropoff.png}
+            \includegraphics[width=\textwidth]{./images/no_freq_dropoff.png}
             \caption{Example of an output with very low frequency dropoff}
             \label{fig:no_freq_dropoff}
         \end{subfigure}
         \hfill
         \begin{subfigure}[b]{0.4\textwidth}
             \centering
-            \includegraphics[width=\textwidth]{/images/freq_dropoff.png}
+            \includegraphics[width=\textwidth]{./images/freq_dropoff.png}
             \caption{Image 2}
             \label{fig:image2}
         \end{subfigure}
@@ -339,14 +339,14 @@ In the end, the following processing arguments are accepted:
 
 To test the performance of the model and the scripts implemented in this assignment, we used a set of reference texts covering 20 different languages,
 these being: Bulgarian, Czech, Danish, German, Greek, English, Spanish, Estonian, Finnish, French, Hungarian, Italian, Lithuanian, Latvian, Dutch, Polish, Portuguese, Romanian, Slovak, Slovenian and Swedish.
-For the target texts, we used a set of texts in the same languages as the reference texts, plus a chinese text, but with different content, which were mainly used to test the find_lang script.
-And finally to test the locate_lang script, we combined the previous target files to a single file named \textit{all_languages.txt} and used it as a target text, and also used a small target text called \textit{dog.txt}
+For the target texts, we used a set of texts in the same languages as the reference texts, plus a chinese text, but with different content, which were mainly used to test the \verb|find_lang| script.
+And finally to test the \verb|locate_lang| script, we combined the previous target files to a single file named \textit{all\_languages.txt} and used it as a target text, and also used a small target text called \textit{dog.txt}
 which also contained some languages mixed in, including chinese, which is not present in our reference files.
 
 \subsection{Find lang}
 \label{subsec:results_find_lang}
 
-To obtain the accuracy of the find_lang script, we used the individual language texts and compared the result of the script with the actual language of the text.
+To obtain the accuracy of the \verb|find_lang| script, we used the individual language texts and compared the result of the script with the actual language of the text.
 Two runs were performed for each language file, one which executed the lang model using its default parameters, such as using a frequency base distribution,
 and another one which used the finite-context model, instead of the other two options for probability distributions, along with the other default parameters.
 
@@ -368,10 +368,9 @@ $$
 C = \sqrt[3]{1 - \frac{m_2}{m_1}^3},
 $$
 
-The following tables show the confidence results of the find_lang script for the default parameters and the finite-context model, respectively.
+The following tables show the confidence results of the \verb|find_lang| script for the default parameters and the finite-context model, respectively.
 
-
-\begin{table}[H]
+\begin{table}
     \centering
     \begin{tabular}{|c|c|}
         \hline
@@ -400,11 +399,11 @@ The following tables show the confidence results of the find_lang script for the
         Swedish & 59.8\% \\
         \hline
     \end{tabular}
-    \caption{Confidence results for the find_lang script with default parameters}
+    \caption{Confidence results for the \texttt{find\_lang} script with default parameters}
     \label{tab:find_lang_default_confidence}
 \end{table}
 
-\begin{table}[H]
+\begin{table}
     \centering
     \begin{tabular}{|c|c|}
         \hline
@@ -433,7 +432,7 @@ The following tables show the confidence results of the find_lang script for the
         Swedish & 89.2\% \\
         \hline
     \end{tabular}
-    \caption{Confidence results for the find_lang script with finite-context model}
+    \caption{Confidence results for the \texttt{find\_lang} script with finite-context model}
     \label{tab:find_lang_finite_context_confidence}
 \end{table}
 
@@ -464,13 +463,13 @@ For all graphs showing the reported information at each target position, the fre
 \label{subsubsec:results_locate_lang_uniform_distribution}
 
 % CUNHA
-By using this approach, we can see very clearly the different languages in figure \ref{fig:all_languages_p_u} of file \textit{all_languages.txt},
+By using this approach, we can see very clearly the different languages in figure \ref{fig:all_languages_p_u} of file \textit{all\_languages.txt},
 because the entropy of the correct language is much lower than all the others.
 But by using this approach, we have more difficulty detecting unknown languages (languages that are not in the references).
 Because even if we define the static threshold at the lowest entropy point of all the correct languages,
 it will also detect the last chunk of text as French, which is wrong, the last chunk of text in the file is Chinese.
 
-For \textit{all_languages_random.txt}, we can distinguish the languages in the figure \ref{fig:all_languages_random_p_u}.
+For \textit{all\_languages\_random.txt}, we can distinguish the languages in the figure \ref{fig:all_languages_random_p_u}.
 We can see the valleys very clearly and infer the language using that information.
 The same difficulty is seen in this figure: we can't define a static threshold without affecting some of the real languages.
 (We can't draw a horizontal line that is above all the reference languages and under the Chinese one.)
@@ -478,29 +477,29 @@ The same difficulty is seen in this figure: we can't define a static threshold w
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-p_u.png}
-    \caption{Entropy of each language for "all_languages.txt",uniform distribution}
+    \caption{Entropy of each language for \textit{all\_languages.txt},uniform distribution}
     \label{fig:all_languages_p_u}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-p_u.png}
-    \caption{Entropy of each language for "all_languages_random.txt",uniform distribution}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},uniform distribution}
     \label{fig:all_languages_random_p_u}
 \end{figure}
 
 \subsubsection{Base probability distribution - Frequency distribution}
 \label{subsubsec:results_locate_lang_frequency_distribution}
 
-Using this approach, we can see the different languages in figure \ref{fig:all_languages_p_f} of file \textit{all_languages.txt}, although it produces a very different plot
+Using this approach, we can see the different languages in figure \ref{fig:all_languages_p_f} of file \textit{all\_languages.txt}, although it produces a very different plot
 compared to the uniform distribution approach.
 
-Its still possible to distinguish the languages in figure \ref{fig:all_languages_random_p_f} of file \textit{all_languages_random.txt}, but it is harder to do so,
+Its still possible to distinguish the languages in figure \ref{fig:all_languages_random_p_f} of file \textit{all\_languages\_random.txt}, but it is harder to do so,
 and another difference is between bulgarian and greek languages to the other languages. These have a much higher entropy than the others, due to the fact that these
 languages use a completely different alphabet than the others.
 
 A downside of this approach is that the static threshold line becomes higher, which means most of the languages will pass the threshold, even in their peak entropy values,
-at least in the case of the \textit{all_languages.txt} file. For the \textit{all_languages_random.txt} file, the peaks are higher due to each line in the file being a random language.
+at least in the case of the \textit{all\_languages.txt} file. For the \textit{all\_languages\_random.txt} file, the peaks are higher due to each line in the file being a random language.
 
 Still, even with this downside, the script still manages to correctly identify the language of the sections, albeit with less accuracy in the entire interval on the random file,
 due to the constant change of languages.
@@ -508,14 +507,14 @@ due to the constant change of languages.
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-p_f.png}
-    \caption{Entropy of each language for "all_languages.txt",frequency distribution}
+    \caption{Entropy of each language for \textit{all\_languages.txt},frequency distribution}
     \label{fig:all_languages_p_f}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-p_f.png}
-    \caption{Entropy of each language for "all_languages_random.txt",frequency distribution}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},frequency distribution}
     \label{fig:all_languages_random_p_f}
 \end{figure}
 
@@ -544,7 +543,7 @@ Now for the smoothing parameter, $\alpha$, we can see that the results are very 
 with the biggest difference being more noticiable in the random file, in figure \ref{fig:all_languages_random_p_c:100:3}, where the static threshold line is too low to detect the correct language.
 This is due to the fact that increasing the smoothing parameter increases the entropy value of each language, which makes the threshold line too low to detect the correct language in each section.
 
-Through these results, the best value for \alpha was $10$ and for the context size was $3$, because these helped to distinguish the correct language from the second best candidate, while not increasing the entropy value too much to make the threshold line too low.
+Through these results, the best value for $\alpha$ was $10$ and for the context size was $3$, because these helped to distinguish the correct language from the second best candidate, while not increasing the entropy value too much to make the threshold line too low.
 
 \begin{figure}
     \begin{subfigure}[b]{0.3\textwidth}
@@ -571,8 +570,8 @@ Through these results, the best value for \alpha was $10$ and for the context si
         \label{fig:all_languages_p_c:1:9}
     \end{subfigure}
     
-    \caption{Entropy of each language for "all_languages.txt",finite-context model by changing $k$}
-    \label{fig:all_languages_p_c:k}
+    \caption{Entropy of each language for \textit{all\_languages.txt},finite-context model by changing $k$}
+    \label{fig:all_languages_p_c}
 \end{figure}
 
 \begin{figure}
@@ -600,8 +599,8 @@ Through these results, the best value for \alpha was $10$ and for the context si
         \label{fig:all_languages_random_p_c:1:9}
     \end{subfigure}
     
-    \caption{Entropy of each language for "all_languages_random.txt",finite-context model by changing $k$}
-    \label{fig:all_languages_random_p_c:k}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},finite-context model by changing $k$}
+    \label{fig:all_languages_random_p_c}
 \end{figure}
 
 
@@ -630,7 +629,7 @@ Through these results, the best value for \alpha was $10$ and for the context si
         \label{fig:all_languages_p_c:100:3}
     \end{subfigure}
     
-    \caption{Entropy of each language for "all_languages.txt",finite-context model by changing $\alpha$}
+    \caption{Entropy of each language for \textit{all\_languages.txt},finite-context model by changing $\alpha$}
     \label{fig:all_languages_p_c:alpha}
 \end{figure}
 
@@ -659,7 +658,7 @@ Through these results, the best value for \alpha was $10$ and for the context si
         \label{fig:all_languages_random_p_c:100:3}
     \end{subfigure}
     
-    \caption{Entropy of each language for "all_languages_random.txt",finite-context model by changing $\alpha$}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},finite-context model by changing $\alpha$}
     \label{fig:all_languages_random_p_c:alpha}
 \end{figure}
 
@@ -672,7 +671,7 @@ So these results will be mostly similar we the results shown for the frequency d
 In this approach we can still distinct the different languages, but not as clearly as some of the previous approaches.
 In the figure \ref{fig:all_languages_r_o} we can see that the entropy of the languages are mostly the same, excluding Greek and Bulgarian.
 One of the positives of this approach is that we can identify much more easily an unknown language (languages that are not in the references) than in some of the previous approaches
-For the “all_languages_random.txt” file we can see in the figure \ref{fig:all_languages_r_o}, that the same behavior is seen, but now with slightly more differences between languages.
+For the \textit{all\_languages\_random.txt} file we can see in the figure \ref{fig:all_languages_r_o}, that the same behavior is seen, but now with slightly more differences between languages.
 
 In contrast to the previous assignment, the lang model is fully trained before compressing the target file. This means that the pointer chosen for each pattern will always be the same.
 This means that the pointer repositioning will not have much effect on the entropy of the target file, since the pointer will always be the same.
@@ -680,14 +679,14 @@ This means that the pointer repositioning will not have much effect on the entro
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_o.png}
-    \caption{Entropy of each language for "all_languages.txt",oldest pointer first}
+    \caption{Entropy of each language for \textit{all\_languages.txt},oldest pointer first}
     \label{fig:all_languages_r_o}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_o.png}
-    \caption{Entropy of each language for "all_languages_random.txt",oldest pointer first}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},oldest pointer first}
     \label{fig:all_languages_random_r_o}
 \end{figure}
 
@@ -701,14 +700,14 @@ because the pointer chosen for each pattern will always be the same, just like t
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_n.png}
-    \caption{Entropy of each language for "all_languages.txt",newer pointer first}
+    \caption{Entropy of each language for \textit{all\_languages.txt},newer pointer first}
     \label{fig:all_languages_r_n}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_n.png}
-    \caption{Entropy of each language for "all_languages_random.txt",newer pointer first}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},newer pointer first}
     \label{fig:all_languages_random_r_n}
 \end{figure}
 
@@ -723,14 +722,14 @@ Also, like the previous approaches, we can still distinct the different language
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_m.png}
-    \caption{Entropy of each language for "all_languages.txt",Most common prediction}
+    \caption{Entropy of each language for \textit{all\_languages.txt},Most common prediction}
     \label{fig:all_languages_r_m}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_m.png}
-    \caption{Entropy of each language for "all_languages_random.txt",Most common prediction}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},Most common prediction}
     \label{fig:all_languages_random_r_m}
 \end{figure}
 
@@ -746,14 +745,14 @@ These results can be seen in the figures \ref{fig:all_languages_r_c} and \ref{fi
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-r_c:100.png}
-    \caption{Entropy of each language for "all_languages.txt",Most common prediction bounded}
+    \caption{Entropy of each language for \textit{all\_languages.txt},Most common prediction bounded}
     \label{fig:all_languages_r_c}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-r_c:100.png}
-    \caption{Entropy of each language for "all_languages_random.txt",Most common prediction bounded}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},Most common prediction bounded}
     \label{fig:all_languages_random_r_c}
 \end{figure}
 
@@ -769,14 +768,14 @@ In the figures \ref{fig:all_languages_t_n} and \ref{fig:all_languages_random_t_n
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_n:0.5.png}
-    \caption{Entropy of each language for "all_languages.txt",Static threshold}
+    \caption{Entropy of each language for \textit{all\_languages.txt},Static threshold}
     \label{fig:all_languages_t_n}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_n:0.5.png}
-    \caption{Entropy of each language for "all_languages_random.txt",Static threshold}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},Static threshold}
     \label{fig:all_languages_random_t_n}
 \end{figure}
 
@@ -792,14 +791,14 @@ the entropy values are slightly higher when observing the minimum entropy values
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_f:9.png}
-    \caption{Entropy of each language for "all_languages.txt",Successive fails threshold}
+    \caption{Entropy of each language for \textit{all\_languages.txt},Successive fails threshold}
     \label{fig:all_languages_t_f}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_f:9.png}
-    \caption{Entropy of each language for "all_languages_random.txt",Successive fails threshold}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},Successive fails threshold}
     \label{fig:all_languages_random_t_f}
 \end{figure}
 
@@ -816,21 +815,21 @@ This makes this strategy the best one when choosing the threshold to switch poin
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages/-t_c:0.01.png}
-    \caption{Entropy of each language for "all_languages.txt",Rate of change threshold}
+    \caption{Entropy of each language for \textit{all\_languages.txt},Rate of change threshold}
     \label{fig:all_languages_t_c}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_c:0.01.png}
-    \caption{Entropy of each language for "all_languages_random.txt",Rate of change threshold}
+    \caption{Entropy of each language for \textit{all\_languages\_random.txt},Rate of change threshold}
     \label{fig:all_languages_random_t_c}
 \end{figure}
 
 \subsubsection{Processing parameters - Frequency dropoff}
 \label{subsubsec:results_locate_lang_frequency_dropoff}
 
-In terms of the locate_lang processing parameters, figures \ref{fig:ll_f_all_languages} and \ref{fig:ll_f_dog} present the effect of the frequency dropoff, i.e. the strength of the low-pass filter, for the \textit{all_languages.txt} and \textit{dog.txt} target files.
+In terms of the \verb|locate_lang| processing parameters, figures \ref{fig:ll_f_all_languages} and \ref{fig:ll_f_dog} present the effect of the frequency dropoff, i.e. the strength of the low-pass filter, for the \textit{all\_languages.txt} and \textit{dog.txt} target files.
 As can be seen from the plots, there is an ideal range of values for the frequency dropoff, below which the accuracy is very low and above which the accuracy doesn't increase.
 In this case, we can notice that a frequency dropoff value of around 50 already provides great classification accuracy.
 
@@ -841,15 +840,15 @@ As such, it's understandable that a low-pass filter heavily improves the classif
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/ll_all_languages/ll-f.png}
-    \caption{Accuracy with respect to locate_lang's frequency dropoff value, on \textit{all_languages.txt}.}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/ll-f.png}
+    \caption{Accuracy with respect to \texttt{locate\_lang}'s frequency dropoff value, on \textit{all\_languages.txt}.}
     \label{fig:ll_f_all_languages}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/ll_dog/ll-f.png}
-    \caption{Accuracy with respect to locate_lang's frequency dropoff value, on \textit{dog.txt}.}
+    \includegraphics[width=0.95\textwidth]{../results/dog/ll-f.png}
+    \caption{Accuracy with respect to \texttt{locate\_lang}'s frequency dropoff value, on \textit{dog.txt}.}
     \label{fig:ll_f_dog}
 \end{figure}
 
@@ -869,23 +868,23 @@ In these transitional sections, the program labels the symbols as unknown since 
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/ll_all_languages/ll-m.png}
-    \caption{Accuracy with respect to locate_lang's minimum threshold, on \textit{all_languages.txt}.}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/ll-m.png}
+    \caption{Accuracy with respect to \texttt{locate\_lang}'s minimum threshold, on \textit{all\_languages.txt}.}
     \label{fig:ll_m_all_languages}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/ll_dog/ll-m.png}
-    \caption{Accuracy with respect to locate_lang's minimum threshold, on \textit{dog.txt}.}
+    \includegraphics[width=0.95\textwidth]{../results/dog/ll-m.png}
+    \caption{Accuracy with respect to \texttt{locate\_lang}'s minimum threshold, on \textit{dog.txt}.}
     \label{fig:ll_m_dog}
 \end{figure}
 
 \subsubsection{Processing parameters - Static threshold}
 \label{subsubsec:results_locate_lang_static_threshold_processing}
 
-The locate_lang's static threshold defines a maximum value below which a reference's reported information should be to be considered.
-More specifically, the parameter value passed to locate_lang defines the denominator $\gamma$ in equation \ref{eq:locate_lang_static_threshold}, described in section \ref{subsec:methodology_locate_lang}.
+The \verb|locate_lang|'s static threshold defines a maximum value below which a reference's reported information should be to be considered.
+More specifically, the parameter value passed to \verb|locate_lang| defines the denominator $\gamma$ in equation \ref{eq:locate_lang_static_threshold}, described in section \ref{subsec:methodology_locate_lang}.
 We tested different values of $\gamma$ above $1.0$.
 As previously explained, $\gamma = 1.0$ defines a static threshold that demands a compression performance at least better than reporting a uniform distribution at each step.
 In practice, if we consider for instance the uniform distribution and the probability distribution based on a finite-context model, then $\gamma = 1.0$ is as if no threshold was applied at all.
@@ -898,22 +897,22 @@ This makes sense when we consider the purpose of the static threshold.
 Since the threshold was conceived so that we can identify languages that we may not have trained on, i.e. are not in the reference bank, then if we set $\gamma = 1.0$ there will be effectively no threshold.
 As such, we can't identify unknown languages at all.
 Since both targets have a section in Chinese, which does not have a respective reference, then this section will be guaranteedly misclassified for both targets if $\gamma = 1.0$.
-The effect is more pronounced in \textit{dog.txt} since the portion that Chinese occupies in the file is larger than in \textit{all_languages.txt}.
+The effect is more pronounced in \textit{dog.txt} since the portion that Chinese occupies in the file is larger than in \textit{all\_languages.txt}.
 
 Additionally, if $\gamma$ increases too much, then we are demanding a better performance from the copy model.
 At this point, it's better to tune this value such that it properly represents the compression performance of the copy model, which we found to be around $1.2$.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/ll_all_languages/ll-s.png}
-    \caption{Accuracy with respect to locate_lang's static threshold, on \textit{all_languages.txt}.}
+    \includegraphics[width=0.95\textwidth]{../results/all_languages/ll-s.png}
+    \caption{Accuracy with respect to \texttt{locate\_lang}'s static threshold, on \textit{all\_languages.txt}.}
     \label{fig:ll_s_all_languages}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.95\textwidth]{../results/ll_dog/ll-s.png}
-    \caption{Accuracy with respect to locate_lang's static threshold, on \textit{dog.txt}.}
+    \includegraphics[width=0.95\textwidth]{../results/dog/ll-s.png}
+    \caption{Accuracy with respect to \texttt{locate\_lang}'s static threshold, on \textit{dog.txt}.}
     \label{fig:ll_s_dog}
 \end{figure}
 
@@ -926,10 +925,10 @@ This was the expected behavior since the model has more information to work with
 Although we must admit that we weren't expecting such a high accuracy with a reference of only 0.1\% of the original reference files.
 With these results we can conclude that the model is very robust and can work with very small references.
 
-To test this we used the \textit{dog.txt} and \textit{all_languages.txt} files as the target file, the references were made randomly with lines from the original 
+To test this we used the \textit{dog.txt} and \textit{all\_languages.txt} files as the target file, the references were made randomly with lines from the original 
 reference files. The size of the reference was varied from 0.1\% to 1\% with increments of 0.1\%, of the original reference files.
 
-\begin{table}[H]
+\begin{table}
     \centering
     \begin{tabular}{|l|l|}
     \hline
@@ -950,7 +949,7 @@ reference files. The size of the reference was varied from 0.1\% to 1\% with inc
 \end{table}
 
 
-\begin{table}[H]
+\begin{table}
     \centering
     \begin{tabular}{|l|l|}
     \hline
@@ -981,7 +980,7 @@ With the development of this assignment, we were able to conclude that our lang 
 produce good results overall in both scripts developed with some variations dependending on the
 parameters used, specially when changing to the finite context model approach.
 
-\subsection{Find_Lang}
+\subsection{Find lang}
 \label{subsec:conclusion:find_lang}
 
 Through the analysis of the results, we can conclude that the best approach to find the language of a text is to use the finite context model.
@@ -992,7 +991,7 @@ that it can't identify a language when is not present in the references, which i
 value for a chinese text was $37.7\%$ for a different language, which is even higher than some correct predictions previously made. In contrast, the finite context model produced a
 confidence value of $0.0\%$ for the same text, which is the expected result, and guarantees that the model is not making a wrong prediction.
 
-\subsection{Locate_Lang}
+\subsection{Locate lang}
 \label{subsec:conclusion:locate_lang}
 
 In the case of the locate lang script, the results were also very positive overall, with the model being able to correctly identify the language of the sections of the target texts,
