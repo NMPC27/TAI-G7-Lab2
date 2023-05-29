@@ -10,6 +10,7 @@ src/*.txt
 
 !report/report.pdf
 !report/report.tex
+!report/refs.bib
 !report/images
 !scripts/input/.empty
 !scripts/processed/.empty
