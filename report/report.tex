@@ -888,7 +888,10 @@ although the difference between the information values of the most probable lang
 If the static threshold wasn't taken into account, the accuracy of these cases would be much higher, probably close to the other cases. 
 When using the finite-context model with small $\alpha$ and $k_f$, we notice a sizeable improvement in classification accuracy, with accuracy around 98\%.
 
-\begin{tabular}{|c|c|}
+
+\begin{table}
+    \centering
+    \begin{tabular}{|c|c|}
     \hline
     \textbf{Parameter} & \textbf{Accuracy (\%)} \\ \hline
     $p_c:10:3$ & 98.608579 \\ \hline
@@ -923,9 +926,11 @@ When using the finite-context model with small $\alpha$ and $k_f$, we notice a s
     $p_c:100:3$ & 84.062462 \\ \hline
     $p_c:1:9$ & 3.821850 \\ \hline
     $p_u$ & 1.108883 \\ \hline
+    
+    \end{tabular}
     \label{tab:locate_lang_accuracy}
     \caption{Accuracy of the \texttt{locate\_lang} script for different values of the parameters.}
-\end{tabular}
+\end{table}
 
 \subsubsection{Processing parameters - Frequency dropoff}
 \label{subsubsec:results_locate_lang_frequency_dropoff}
