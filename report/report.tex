@@ -283,9 +283,10 @@ For this we considered two thresholds:
     This threshold is defined in terms of the cardinality of the target alphabet.
     More precisely, the static threshold $S$ in bits is given by the formula:
 
-    $$
-    S = \frac{\log_2 |\Sigma|}{\gamma},
-    $$
+    \begin{equation}
+        \label{eq:locate_lang_static_threshold}
+        S = \frac{\log_2 |\Sigma|}{\gamma},
+    \end{equation}
 
     where $\Sigma$ is the target alphabet and $\gamma$ is a real positive value.
     This way, we define the static threshold as a fraction of a baseline compression, in which the reported probability distribution at each step is a uniform distribution with each symbol having $\log_2 |\Sigma|$ bits of information.
@@ -303,7 +304,7 @@ In the end, the following processing arguments are accepted:
     Low-pass filters attenuate higher frequencies while allowing low-frequency signals to pass. 
     We can see the diference between a low frequency dropoff in figure \ref{fig:no_freq_dropoff} and a higher frequency dropoff in figure \ref{fig:freq_dropoff}.
 
-
+    % TODO: these images contain bugs and are outdated
     \begin{figure}
         \centering
         \begin{subfigure}[b]{0.4\textwidth}
@@ -334,6 +335,7 @@ In the end, the following processing arguments are accepted:
 \label{sec:results}
 
 % TODO: talk about the compression results as well: why is the number of reported total bits and mean bits per symbol so low? It's probably because we are not accounting for the space required to store the reference text, which was necessary to compress the target to an absurdly low number of bits.
+% TODO: talk about the experimental process: which targets were used and how were they obtained?
 
 To test the performance of the model and the scripts implemented in this assignment, we used a set of reference texts covering 20 different languages,
 these being: Bulgarian, Czech, Danish, German, Greek, English, Spanish, Estonian, Finnish, French, Hungarian, Italian, Lithuanian, Latvian, Dutch, Polish, Portuguese, Romanian, Slovak, Slovenian and Swedish.
@@ -820,6 +822,96 @@ This makes this strategy the best one when choosing the threshold to switch poin
     \includegraphics[width=0.5\textwidth]{../results/all_languages_random/-t_c:0.01.png}
     \caption{Entropy of each language for "all_languages_random.txt",Rate of change threshold}
     \label{fig:all_languages_random_t_c}
+\end{figure}
+
+\subsubsection{Processing parameters - Frequency dropoff}
+\label{subsubsec:results_locate_lang_frequency_dropoff}
+
+In terms of the locate_lang processing parameters, figures \ref{fig:ll_f_all_languages} and \ref{fig:ll_f_dog} present the effect of the frequency dropoff, i.e. the strength of the low-pass filter, for the \textit{all_languages.txt} and \textit{dog.txt} target files.
+As can be seen from the plots, there is an ideal range of values for the frequency dropoff, below which the accuracy is very low and above which the accuracy doesn't increase.
+In this case, we can notice that a frequency dropoff value of around 50 already provides great classification accuracy.
+
+Note that if the frequency dropoff is 0, then it is equivalent to having no low-pass filter applied.
+Therefore, we can see the heavy influence of the low-pass filter, as applying just some filtering brings the accuracy from $40\%$ without any filter to above $90\%$.
+As explained in section \ref{subsec:methodology_locate_lang}, the copy model's behaviour is very erratic, with spurious and short copies throughout the target text.
+As such, it's understandable that a low-pass filter heavily improves the classification accuracy, since these spikes of information are attenuated and so we can better study trends over larger segments of the target text instead of symbol-by-symbol.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/ll_all_languages/ll-f.png}
+    \caption{Accuracy with respect to locate_lang's frequency dropoff value, on \textit{all_languages.txt}.}
+    \label{fig:ll_f_all_languages}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/ll_dog/ll-f.png}
+    \caption{Accuracy with respect to locate_lang's frequency dropoff value, on \textit{dog.txt}.}
+    \label{fig:ll_f_dog}
+\end{figure}
+
+\subsubsection{Processing parameters - Minimum threshold}
+\label{subsubsec:results_locate_lang_minimum_threshold}
+
+The minimum threshold dictates how similar is the minimum reference allowed to be to the second minimum reference.
+We tested values below or equal to $1.0$, with $1.0$ meaning that the minimum reference can report exactly the same information as the second minimum at a given step.
+Technically, if the minimum threshold is $1.0$, then it has no effect.
+Figures \ref{fig:ll_m_all_languages} and \ref{fig:ll_m_dog} present the effect of this parameter on the classification accuracy.
+
+From the plots, we can notice that minimum threshold values below $1.0$ decrease the classification accuracy.
+In the \textit{dog.txt} target the curve is more irregular, but still decreasing.
+Although the threshold was conceived to reduce ambiguity in the target language when many were likely candidates, it ended up heavily reducing classification performance overall.
+The reason that likely prevented the program from classifying correctly with this threshold is the transition between languages in the target text.
+In these transitional sections, the program labels the symbols as unknown since there is confusion, whereas without any threshold the program tries to make a best effort to classify the perceived language, without reporting any unknowns.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/ll_all_languages/ll-m.png}
+    \caption{Accuracy with respect to locate_lang's minimum threshold, on \textit{all_languages.txt}.}
+    \label{fig:ll_m_all_languages}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/ll_dog/ll-m.png}
+    \caption{Accuracy with respect to locate_lang's minimum threshold, on \textit{dog.txt}.}
+    \label{fig:ll_m_dog}
+\end{figure}
+
+\subsubsection{Processing parameters - Static threshold}
+\label{subsubsec:results_locate_lang_static_threshold_processing}
+
+The locate_lang's static threshold defines a maximum value below which a reference's reported information should be to be considered.
+More specifically, the parameter value passed to locate_lang defines the denominator $\gamma$ in equation \ref{eq:locate_lang_static_threshold}, described in section \ref{subsec:methodology_locate_lang}.
+We tested different values of $\gamma$ above $1.0$.
+As previously explained, $\gamma = 1.0$ defines a static threshold that demands a compression performance at least better than reporting a uniform distribution at each step.
+In practice, if we consider for instance the uniform distribution and the probability distribution based on a finite-context model, then $\gamma = 1.0$ is as if no threshold was applied at all.
+Figures \ref{fig:ll_s_all_languages} and \ref{fig:ll_s_dog} present the classification accuracy with respect to the denominator $\gamma$ of the static threshold.
+
+We can notice that there is a local maximum for both targets.
+Around $\gamma = 1.2$, we can see that the classification accuracy is the highest, and the larger the value the lower it gets.
+Curiously, for the \textit{dog.txt} target the classification accuracy is particularly worse for $\gamma = 1.0$ than it is for $\gamma = 1.2$.
+This makes sense when we consider the purpose of the static threshold.
+Since the threshold was conceived so that we can identify languages that we may not have trained on, i.e. are not in the reference bank, then if we set $\gamma = 1.0$ there will be effectively no threshold.
+As such, we can't identify unknown languages at all.
+Since both targets have a section in Chinese, which does not have a respective reference, then this section will be guaranteedly misclassified for both targets if $\gamma = 1.0$.
+The effect is more pronounced in \textit{dog.txt} since the portion that Chinese occupies in the file is larger than in \textit{all_languages.txt}.
+
+Additionally, if $\gamma$ increases too much, then we are demanding a better performance from the copy model.
+At this point, it's better to tune this value such that it properly represents the compression performance of the copy model, which we found to be around $1.2$.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/ll_all_languages/ll-s.png}
+    \caption{Accuracy with respect to locate_lang's static threshold, on \textit{all_languages.txt}.}
+    \label{fig:ll_s_all_languages}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\textwidth]{../results/ll_dog/ll-s.png}
+    \caption{Accuracy with respect to locate_lang's static threshold, on \textit{dog.txt}.}
+    \label{fig:ll_s_dog}
 \end{figure}
 
 \subsubsection{Variable reference size}
