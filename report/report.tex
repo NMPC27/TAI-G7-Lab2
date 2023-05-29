@@ -335,7 +335,7 @@ In the end, the following processing arguments are accepted:
 \label{sec:results}
 
 % TODO: talk about the compression results as well: why is the number of reported total bits and mean bits per symbol so low? It's probably because we are not accounting for the space required to store the reference text, which was necessary to compress the target to an absurdly low number of bits.
-% TODO: talk about the experimental process: which targets were used and how were they obtained?
+% TODO: talk about experimental method: how and which target texts were used and evaluted?
 
 To test the performance of the model and the scripts implemented in this assignment, we used a set of reference texts covering 20 different languages,
 these being: Bulgarian, Czech, Danish, German, Greek, English, Spanish, Estonian, Finnish, French, Hungarian, Italian, Lithuanian, Latvian, Dutch, Polish, Portuguese, Romanian, Slovak, Slovenian and Swedish.
@@ -362,11 +362,14 @@ For the second run, with the finite-context model, the script also correctly ide
     Accuracy = \frac{correct}{total} = \frac{20}{20} = 1
 \end{equation}
 
-To differentiate between the two approaches, we also calculated a confidence value. The way this value is calculated is through equation \ref{eq:find_lang_confidence}.
+To differentiate between the two approaches, we also calculated a confidence value. The way this value is calculated is through the following formula:
+
+$$
+C = \sqrt[3]{1 - \frac{m_2}{m_1}^3},
+$$
 
 The following tables show the confidence results of the find_lang script for the default parameters and the finite-context model, respectively.
 
-% TODO: add chinese?
 
 \begin{table}[H]
     \centering
@@ -915,13 +918,89 @@ At this point, it's better to tune this value such that it properly represents t
 \end{figure}
 
 \subsubsection{Variable reference size}
+\label{subsubsec:results_locate_lang_variable_reference_size}
 
 We also analyzed the effect of the reference's size on the language classification.
+As we can see in tables \ref{tab:rel_size_ref_acc_dog} and \ref{tab:rel_size_ref_acc_all} the accuracy of the language classification increases with the size of the reference.
+This was the expected behavior since the model has more information to work with and therefore a more complete and complex model.
+Although we must admit that we weren't expecting such a high accuracy with a reference of only 0.1\% of the original reference files.
+With these results we can conclude that the model is very robust and can work with very small references.
 
-\dots
+To test this we used the \textit{dog.txt} and \textit{all_languages.txt} files as the target file, the references were made randomly with lines from the original 
+reference files. The size of the reference was varied from 0.1\% to 1\% with increments of 0.1\%, of the original reference files.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|}
+    \hline
+        Size of the reference (\%) & Accuracy (\%) \\ \hline
+        0.1 & 87.117552 \\ \hline
+        0.2 & 92.431562 \\ \hline
+        0.3 & 93.666130 \\ \hline
+        0.4 & 93.880837 \\ \hline
+        0.5 & 93.988191 \\ \hline
+        0.6 & 93.988191 \\ \hline
+        0.7 & 94.202899 \\ \hline
+        0.8 & 94.202899 \\ \hline
+        0.9 & 94.310252 \\ \hline
+        1.0 & 94.471283 \\ \hline
+    \end{tabular}
+    \caption{Relation between the size of the reference and the accuracy of the language classification og the \textit{dog.txt} file}
+    \label{tab:rel_size_ref_acc_dog}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|}
+    \hline
+        Size of the reference (\%) & Accuracy (\%) \\ \hline
+        0.1 & 90.885891 \\ \hline
+        0.2 & 97.760967 \\ \hline
+        0.3 & 99.273909 \\ \hline
+        0.4 & 99.659740 \\ \hline
+        0.5 & 99.732653 \\ \hline
+        0.6 & 99.750881 \\ \hline
+        0.7 & 99.753919 \\ \hline
+        0.8 & 99.766071 \\ \hline
+        0.9 & 99.778223 \\ \hline
+        1.0 & 99.781261 \\ \hline
+    \end{tabular}
+    \caption{Relation between the size of the reference and the accuracy of the language classification og the \textit{dog.txt} file}
+    \label{tab:rel_size_ref_acc_all}
+\end{table}
+
+We can also conclude that the accuracy of the language classification is affected by the size of the target file, 
+a bigger target file will have a higher accuracy.
+This happens because the model has more chances to hit the correct language, since the target is bigger.
 
 \section{Conclusion}
 \label{sec:conclusion}
+
+With the development of this assignment, we were able to conclude that our lang model
+produce good results overall in both scripts developed with some variations dependending on the
+parameters used, specially when changing to the finite context model approach.
+
+\subsection{Find_Lang}
+\label{subsec:conclusion:find_lang}
+
+Through the analysis of the results, we can conclude that the best approach to find the language of a text is to use the finite context model.
+Using the frequency and uniform distribution strategies did also correctly identify the language of all target texts texted, although with considerably lower confidence values.
+In contrast, the finite context model produced much better results with confidence values not lower than $77.3\%$ when testing with the target texts.
+Another big improvement between the frequency and uniform distribution strategies and the finite context model is the fact that the latter as a much better capacity to confirm
+that it can't identify a language when is not present in the references, which is a very important feature. For the frequency and uniform distribution strategies, the confidence
+value for a chinese text was $37.7\%$ for a different language, which is even higher than some correct predictions previously made. In contrast, the finite context model produced a
+confidence value of $0.0\%$ for the same text, which is the expected result, and guarantees that the model is not making a wrong prediction.
+
+\subsection{Locate_Lang}
+\label{subsec:conclusion:locate_lang}
+
+In the case of the locate lang script, the results were also very positive overall, with the model being able to correctly identify the language of the sections of the target texts,
+with special emphasis when using the finite context approach, which had a bigger difference in entropy between the correct language and the second most probable language.
+
+By testing the different parameters, we verified that most of the parameters had a very small impact on the results, due to the different nature of the objective between this
+assignment and the previous one. The only parameter that had a significant impact on the results was the threshold strategy, with the rate of change threshold strategy producing
+slightly better results than the other two strategies, by creating a slight bigger difference between the entropy values of the correct language and the second most probable language.
 
 \section{References}
 \bibliography{refs}
