@@ -267,8 +267,27 @@ An example of the frequencies composing the target data and the corresponding do
 \begin{figure}
     \centering
     \includegraphics[width=0.95\textwidth]{./images/low_pass_filter.png}
-    \caption{Example of the frequencies composing the compressed information of target \textit{all\_languages\_random.txt} trained on the greek reference, with default lang model parameters and finite-context distribution with $k_f=6$. The exponential downscaling function applied to the frequencies is also shown on the right plot.}
+    \caption{Example of the frequencies composing the compressed information of target \textit{all\_languages.txt} trained on the Greek reference, with default \texttt{lang} model parameters. The exponential downscaling function applied to the frequencies is also shown on the right plot.}
     \label{fig:low_pass_filter}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./images/no_freq_dropoff.png}
+        \caption{No low-pass filter}
+        \label{fig:no_freq_dropoff}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./images/freq_dropoff.png}
+        \caption{Low-pass filter with frequency dropoff equal to $100.0$}
+        \label{fig:freq_dropoff}
+    \end{subfigure}
+    \caption{Effect of the low-pass filter on the reported information at each step in \textit{all\_languages.txt}.}
+    \label{fig:low_pass_filter_res}
 \end{figure}
 
 With the matrix $M$ representing the information at each step for every reference, we determine for each column, i.e. position in the target text, which row provides the minimum amount of information, that is which reference compressed the target symbol the best.
@@ -298,28 +317,7 @@ In the end, the following processing arguments are accepted:
 \begin{itemize}
     \item \texttt{minimum-threshold}: fraction of the second minimum below which the absolute minimum has to be so that it is considered.
     \item \texttt{static-threshold}: denominator $\gamma$ that defines the static threshold in terms of the target alphabet's cardinality.
-    \item \texttt{frequency-filter}: the frequency dropoff $\beta$ of the low-pass filter
-
-    % TODO: these images contain bugs and are outdated
-    \begin{figure}
-        \centering
-        \begin{subfigure}[b]{0.4\textwidth}
-            \centering
-            \includegraphics[width=\textwidth]{./images/no_freq_dropoff.png}
-            \caption{Example of an output with very low frequency dropoff}
-            \label{fig:no_freq_dropoff}
-        \end{subfigure}
-        \hfill
-        \begin{subfigure}[b]{0.4\textwidth}
-            \centering
-            \includegraphics[width=\textwidth]{./images/freq_dropoff.png}
-            \caption{Image 2}
-            \label{fig:image2}
-        \end{subfigure}
-        \caption{Example of an output with higher low frequency dropoff}
-        \label{fig:freq_dropoff}
-    \end{figure}
-
+    \item \texttt{frequency-filter}: the frequency dropoff $\beta$ of the low-pass filter.
     \item \texttt{fill-unknown}: make an effort to consider unknown language segments as being of one of the previously identified languages, using forward and backward filling.
     \item \texttt{labeled-output}: print the target text, with segments colored depending on the identified language.
     \item \texttt{plot}: plot the entire matrix $M$ after applying the low pass filter, along with the static threshold.
@@ -334,6 +332,8 @@ In the end, the following processing arguments are accepted:
 
 To test the performance of the model and the scripts implemented in this assignment, we used a set of reference texts covering 20 different languages,
 these being: Bulgarian, Czech, Danish, German, Greek, English, Spanish, Estonian, Finnish, French, Hungarian, Italian, Lithuanian, Latvian, Dutch, Polish, Portuguese, Romanian, Slovak, Slovenian and Swedish.
+These reference texts were obtained from the Language-Aware String Extractor Files repository \cite{references:source}.
+
 For the target texts, we used a set of texts in the same languages as the reference texts, plus a Chinese text, but with different content, which were mainly used to test the \texttt{find_lang} script.
 And finally, to test the \texttt{locate_lang} script, we used the following target files:
 
@@ -345,9 +345,6 @@ And finally, to test the \texttt{locate_lang} script, we used the following targ
 
 The model's classification accuracy was measured for both the \texttt{find_lang} and \texttt{locate_lang} scripts, on the texts \textit{all\_languages.txt} and \textit{dog.txt}, for which we had the correct classification result.
 These two targets were used additionally to check whether the length of each segment in the target text influences the model's clasification performance, where \textit{dog.txt} has smaller language segments than \textit{all\_languages.txt}.
-
-% we combined the previous target files to a single file named \textit{all\_languages.txt} and used it as a target text, and also used a small target text called \textit{dog.txt}
-% which also contained some languages mixed in, including Chinese, which is not present in our reference files.
 
 \subsection{Find lang}
 \label{subsec:results_find_lang}
@@ -460,8 +457,7 @@ With these results we can conclude that the probability distribution based on th
 For \texttt{locate_lang}, we created plots evaluating the reported information at each position in the target files \textit{all\_languages.txt} and \textit{all\_languages\_random.txt} using different \texttt{lang} model configurations, to check the effect that each parameter has in the overall language segmentation process.
 We also evaluated the classification accuracy for the target files \textit{all\_languages.txt} and \textit{dog.txt}, using different \texttt{lang} model configurations and different result processing parameters for the script itself.
 
-For all plots showing the reported information at each target position, the frequency dropoff used was 1000.
-Unless stated otherwise, the \texttt{lang} model parameters are the default ones.
+Unless stated otherwise, for all plots showing the reported information at each target position, the script and \texttt{lang} model parameters are the default ones.
 
 \subsubsection{Base probability distribution - Uniform distribution}
 \label{subsubsec:results_locate_lang_uniform_distribution}
@@ -675,9 +671,6 @@ In this approach we can still distinguish the different languages, but not as cl
 In figure \ref{fig:all_languages_r_o} we can see that the reported information by the languages are mostly the same, excluding Greek and Bulgarian.
 One of the positives of this approach is that we can identify much more easily an unknown language (languages that are not in the references) than in some of the previous approaches. % TODO: we can???
 For the \textit{all\_languages\_random.txt} file we can see in the figure \ref{fig:all_languages_r_o}, that the same behavior is seen, but now with slightly more differences between languages.
-
-% In contrast to the previous assignment, the lang model is fully trained before compressing the target file. This means that the pointer chosen for each pattern will always be the same.
-% This means that the pointer repositioning will not have much effect on the entropy of the target file, since the pointer will always be the same.
 
 \begin{figure}
     \centering
