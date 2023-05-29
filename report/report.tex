@@ -926,10 +926,9 @@ When using the finite-context model with small $\alpha$ and $k_f$, we notice a s
     $p_c:100:3$ & 84.062462 \\ \hline
     $p_c:1:9$ & 3.821850 \\ \hline
     $p_u$ & 1.108883 \\ \hline
-    
     \end{tabular}
-    \label{tab:locate_lang_accuracy}
     \caption{Accuracy of the \texttt{locate\_lang} script for different values of the parameters.}
+    \label{tab:locate_lang_accuracy}
 \end{table}
 
 \subsubsection{Processing parameters - Frequency dropoff}
@@ -1076,7 +1075,7 @@ reference files. The size of the reference was varied from 10\% to 100\% with in
 
 We can also conclude that the accuracy of the language classification is affected by the size of the target file, 
 a bigger target file will have a higher accuracy.
-This happens because the language segments are bigger for \textit{all_languages.txt}, giving more time for the model to find a context with a past from which to start copying.
+This happens because the language segments are bigger for \textit{all\_languages.txt}, giving more time for the model to find a context with a past from which to start copying.
 In \textit{dog.txt}, the segments are shorter, requiring the copy model to transition between languages more often.
 
 \section{Conclusion}
